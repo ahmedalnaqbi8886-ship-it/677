@@ -8,14 +8,15 @@ namespace EaxReverbEngine
 {
     internal enum LicState { Ok, NoKey, BadKey, Revoked, Expired, NoServer }
 
-    // نظام اشتراك مبني على موقع/سيرفر - مو مربوط بجهاز (HWID).
-    // المفتاح نفسه رقم عشوائي من السيرفر، والسيرفر هو اللي يقرر صالح/ملغى/منتهي.
-    // كذا تقدر تلغي اشتراك اي عميل في اي وقت من لوحة تحكم السيرفر (LicenseServer/admin.html)
-    // بدون ما تحتاج تصدر نسخة جديدة من البرنامج.
+    // نظام اشتراك بسيط بدون سيرفر حقيقي - مو مربوط بجهاز (HWID).
+    // البرنامج يقرأ ملف نصي عام (licenses.txt) من GitHub Pages، سطر لكل عميل:
+    //   KEY|STATUS|PLAN|EXPIRES
+    // تلغي اشتراك اي عميل بأي وقت بس بفتح الملف بـ GitHub وتبدل ACTIVE الى REVOKED وتعمل Commit.
+    // شوف LicenseData/README.txt لخطوات الاعداد (GitHub Pages، بدون استضافة/سيرفر منفصل).
     internal static class License
     {
-        // رابط سيرفر التراخيص - لازم تبدله برابط موقعك الحقيقي بعد ما ترفعه (شوف LicenseServer/README.txt)
-        private const string ServerUrl = "https://YOUR-LICENSE-SERVER.example.com";
+        // رابط ملف الملخصات النصي (raw) بعد ما تفعّل GitHub Pages - بدله برابطك الحقيقي
+        private const string ServerUrl = "https://YOUR-USERNAME.github.io/license-data/licenses.txt";
 
         public static string PlanName = "";
         public static DateTime? Expiry = null; // null = Lifetime او بدون تاريخ معروف
@@ -44,27 +45,46 @@ namespace EaxReverbEngine
             try { File.WriteAllText(KeyFile(), key.Trim()); } catch (Exception) { }
         }
 
-        // يسأل السيرفر عن حالة المفتاح. السيرفر يرجع سطر نصي: STATUS|PLAN|EXPIRES
-        // STATUS = ACTIVE | REVOKED | EXPIRED | NOTFOUND
-        private static string AskServer(string key)
+        // يحمل ملف النصوص كامل (كل مرة - بدون كاش HTTP حتى ما ياخذ نسخة قديمة محفوظة بالمتصفح/الشبكة)
+        private static string FetchFile()
         {
             try
             {
                 ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-                string url = ServerUrl.TrimEnd('/') + "/validate?key=" + Uri.EscapeDataString(key);
+                string url = ServerUrl + (ServerUrl.IndexOf('?') >= 0 ? "&" : "?") + "t=" + DateTime.UtcNow.Ticks;
                 HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
                 req.Method = "GET";
                 req.Timeout = 8000;
                 req.ReadWriteTimeout = 8000;
                 req.UserAgent = "EaxReverbEngine-LicenseClient";
+                req.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
                 using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
                 using (Stream s = resp.GetResponseStream())
                 using (StreamReader rd = new StreamReader(s, Encoding.UTF8))
                 {
-                    return rd.ReadToEnd().Trim();
+                    return rd.ReadToEnd();
                 }
             }
-            catch (Exception) { return null; } // نت مقطوع او السيرفر واقف - نرجع null ونعتمد على الكاش
+            catch (Exception) { return null; } // نت مقطوع او الملف مو موصول - نرجع null ونعتمد على الكاش
+        }
+
+        // يدور سطر المفتاح داخل الملف: KEY|STATUS|PLAN|EXPIRES  (اسطر تبدأ بـ # تتجاهل)
+        private static string FindLine(string text, string key)
+        {
+            if (text == null) return null;
+            string[] lines = text.Replace("\r", "").Split('\n');
+            foreach (string raw in lines)
+            {
+                string line = raw.Trim();
+                int hash = line.IndexOf('#');
+                if (hash >= 0) line = line.Substring(0, hash).Trim(); // يشيل تعليق # بآخر السطر لو موجود
+                if (line.Length == 0) continue;
+                int i = line.IndexOf('|');
+                if (i <= 0) continue;
+                string k = line.Substring(0, i).Trim();
+                if (string.Equals(k, key, StringComparison.OrdinalIgnoreCase)) return line;
+            }
+            return null;
         }
 
         private static void WriteCache(string status, string plan, string expiresIso)
@@ -115,7 +135,7 @@ namespace EaxReverbEngine
             }
         }
 
-        // يتحقق من مفتاح: يسأل السيرفر اولا، ولو ما وصل يستخدم اخر نتيجة محفوظة ضمن فترة سماح محدودة
+        // يتحقق من مفتاح: يحمل ملف النصوص ويدور السطر، ولو ما وصل يستخدم اخر نتيجة محفوظة ضمن فترة سماح
         public static LicState Validate(string key)
         {
             PlanName = ""; Expiry = null;
@@ -123,18 +143,32 @@ namespace EaxReverbEngine
             if (string.IsNullOrEmpty(key)) return LicState.NoKey;
             if (key.Length < 8) return LicState.BadKey;
 
-            string resp = AskServer(key);
-            if (resp != null)
+            string text = FetchFile();
+            if (text != null)
             {
-                string[] parts = resp.Split('|');
-                string status = parts.Length > 0 ? parts[0] : "";
-                string plan = parts.Length > 1 ? parts[1] : "";
-                string exp = parts.Length > 2 ? parts[2] : "";
-                WriteCache(status, plan, exp);
-                return FromStatus(status, plan, exp);
+                string line = FindLine(text, key);
+                if (line == null)
+                {
+                    WriteCache("NOTFOUND", "", "");
+                    return LicState.BadKey;
+                }
+                string[] f = line.Split('|');
+                string status = (f.Length > 1 ? f[1] : "").Trim().ToUpperInvariant();
+                string plan = (f.Length > 2 ? f[2] : "").Trim();
+                string expText = (f.Length > 3 ? f[3] : "").Trim();
+
+                // لو التاريخ المكتوب بالملف فات، نعتبرها منتهية حتى لو حد نسى يبدلها يدوي
+                DateTime expDate;
+                bool hasExp = DateTime.TryParse(expText, CultureInfo.InvariantCulture,
+                    DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out expDate);
+                if (status == "ACTIVE" && hasExp && DateTime.UtcNow >= expDate) status = "EXPIRED";
+
+                string expIso = hasExp ? expDate.ToString("o") : "";
+                WriteCache(status, plan, expIso);
+                return FromStatus(status, plan, expIso);
             }
 
-            // ما قدرنا نوصل للسيرفر - نسمح بفترة سماح قصيرة بناء على اخر تحقق ناجح فقط
+            // ما قدرنا نوصل للملف - نسمح بفترة سماح قصيرة بناء على اخر تحقق ناجح فقط
             string cStatus, cPlan, cExp; DateTime lastOk;
             if (ReadCache(out cStatus, out cPlan, out cExp, out lastOk))
             {
