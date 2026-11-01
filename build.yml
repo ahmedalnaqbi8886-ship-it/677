@@ -1,0 +1,35 @@
+name: build-engine
+on:
+  push:
+  workflow_dispatch:
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build
+        run: dotnet build EaxReverbEngine.csproj -c Release -o out
+
+      # تشويش الاسماء (obfuscation) بـ ConfuserEx حتى ما يقدر احد يفتح الكود بسهولة بـ dnSpy.
+      # هذا اداة علنية معروفة تغيّر اسماء المتغيرات/الدوال، ما يطفي او يخفي البرنامج عن مضاد
+      # الفيروسات ولا يسوي اي اتصال خفي. اذا فشلت الخطوة لأي سبب نكمل برفع النسخة العادية.
+      - name: Obfuscate (ConfuserEx)
+        continue-on-error: true
+        run: |
+          dotnet tool install --global Confuser.CLI
+          Confuser.CLI -n Confuser.crproj
+
+      - name: Collect output
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Force -Path publish | Out-Null
+          if (Test-Path "obf/Confused/EaxReverbEngine.dll") {
+            Copy-Item "obf/Confused/EaxReverbEngine.dll" "publish/EaxReverbEngine.dll"
+          } else {
+            Copy-Item "out/EaxReverbEngine.dll" "publish/EaxReverbEngine.dll"
+          }
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: EaxReverbEngine
+          path: publish/EaxReverbEngine.dll

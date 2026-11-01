@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<project outputDir="obf" baseDir="out" xmlns="http://confuser.codeplex.com">
+  <rule pattern="true" preset="normal" inherit="false">
+    <setting name="rename" value="true" />
+    <setting name="renPublic" value="false" />
+    <!-- controlFlow و refProxy عطلتهم: هذولين معروفين انهم يكسرون كود فيه كثير
+         try/finally (كل الرسم بـ GDI+ بهذا المشروع) او تعامل مع كود native (VST) -
+         يبنون DLL يفتح بـ dnSpy عادي بس يتصرف غلط او يطيح وقت التشغيل الفعلي.
+         rename لحالها كافية تخربط اسماء الكلاسات والدوال زي ما تشوف بـ dnSpy. -->
+    <setting name="controlFlow" value="false" />
+    <setting name="constants" value="true" />
+    <setting name="refProxy" value="false" />
+    <setting name="antiDump" value="false" />
+    <setting name="antiDebug" value="false" />
+    <setting name="antiTamper" value="false" />
+    <setting name="antiILDasm" value="false" />
+    <setting name="invalidMetadata" value="false" />
+    <setting name="watermark" value="false" />
+    <setting name="compressor" value="false" />
+  </rule>
+  <module path="EaxReverbEngine.dll" />
+</project>
