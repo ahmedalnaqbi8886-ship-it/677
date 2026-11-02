@@ -176,23 +176,31 @@ namespace EaxReverbEngine
             }
             else
             {
-                // سلايدر افقي مسطح - نفس شكل Bass Boost / Bass Management الاصلي بالضبط
-                // (خط تجويف رفيع غائر + مقبض مستطيل مسطح بارز، بدون تدرج لامع او صور بديلة)
+                // سلايدر افقي Bass Boost / Bass Management - طابقته على لقطة الاصلي الحقيقية بالبكسل:
+                // قضيب رمادي غامق سميك باطراف مدورة (تدرج غامق فوق لفاتح تحت) + مقبض ابيض
+                // مستطيل زواياه مدورة اعرض من طوله يعلو فوق القضيب (مب كبسولة ومب خط رفيع)
                 int cy = Height / 2;
                 int left = PadTop;
                 int right = Width - PadBottom;
                 int tx = left + (int)Math.Round((right - left) * f);
 
-                g.SmoothingMode = SmoothingMode.None;
-                int gy = cy - 2;
-                using (Pen top1 = new Pen(Color.FromArgb(118, 118, 122))) { g.DrawLine(top1, left, gy, right, gy); }
-                using (Pen top2 = new Pen(Color.FromArgb(150, 150, 154))) { g.DrawLine(top2, left, gy + 1, right, gy + 1); }
-                using (Brush fillB = new SolidBrush(Color.FromArgb(188, 188, 192))) { g.FillRectangle(fillB, left, gy + 2, right - left, 1); }
-                using (Pen bot = new Pen(Color.FromArgb(253, 253, 253))) { g.DrawLine(bot, left, gy + 3, right, gy + 3); }
+                int gh = 10;
+                Rectangle gv = new Rectangle(left, cy - gh / 2, Math.Max(gh, right - left), gh);
+                using (GraphicsPath gp = Skin.Round(gv, gh / 2))
+                {
+                    using (LinearGradientBrush b = new LinearGradientBrush(gv, Color.FromArgb(62, 62, 64), Color.FromArgb(196, 196, 199), 90f))
+                    {
+                        Blend bl = new Blend();
+                        bl.Positions = new float[] { 0f, 0.18f, 1f };
+                        bl.Factors = new float[] { 0f, 0.38f, 1f };
+                        b.Blend = bl;
+                        g.FillPath(b, gp);
+                    }
+                    using (Pen edge = new Pen(Color.FromArgb(44, 44, 44), 1f)) { g.DrawPath(edge, gp); }
+                }
 
-                g.SmoothingMode = SmoothingMode.AntiAlias;
-                Rectangle th = new Rectangle(tx - 11, cy - 7, 22, 14);
-                DrawCapsuleThumb(g, th, _hover || _drag);
+                Rectangle th = new Rectangle(tx - 13, cy - 8, 26, 16);
+                DrawHandleThumb(g, th);
             }
         }
 
@@ -242,29 +250,21 @@ namespace EaxReverbEngine
             using (Brush hb = new SolidBrush(Color.FromArgb(150, 255, 255, 255))) { g.FillPath(hb, hgp); }
         }
 
-        // مقبض كبسولة لامعة لـ Bass Boost / Bass Management: فضي/ابيض بالوضع العادي، يتحول ازرق لما
-        // الماوس يكون فوقه او يسحبه (نفس الشكل اللي ارسله المستخدم: كبسولة بلمعة بيضاء فوق)
-        private static void DrawCapsuleThumb(Graphics g, Rectangle th, bool active)
+        // مقبض Bass Boost / Bass Management: مستطيل ابيض زواياه مدورة (مب كبسولة كاملة) بتدرج
+        // خفيف فاتح فوق لأغمق تحت وحدود رمادية غامقة - مطابق للقطة الاصلية بالبكسل
+        private static void DrawHandleThumb(Graphics g, Rectangle th)
         {
-            using (GraphicsPath gp = Skin.Round(th, th.Height / 2))
+            using (GraphicsPath gp = Skin.Round(th, 4))
             {
-                Color top = active ? Color.FromArgb(236, 248, 255) : Color.White;
-                Color bot = active ? Color.FromArgb(0, 95, 210) : Color.FromArgb(162, 162, 168);
-                Color edge = active ? Color.FromArgb(0, 60, 150) : Color.FromArgb(120, 120, 126);
-                Rectangle sh = th; sh.Offset(0, 2);
-                using (GraphicsPath sgp = Skin.Round(sh, sh.Height / 2))
-                using (Brush sb = new SolidBrush(Color.FromArgb(45, 0, 0, 0))) { g.FillPath(sb, sgp); }
-
-                using (LinearGradientBrush b = new LinearGradientBrush(th, top, bot, 90f))
+                using (LinearGradientBrush b = new LinearGradientBrush(th, Color.White, Color.FromArgb(185, 183, 186), 90f))
                 {
-                    b.Blend = Gloss();
+                    Blend bl = new Blend();
+                    bl.Positions = new float[] { 0f, 0.5f, 1f };
+                    bl.Factors = new float[] { 0f, 0.3f, 1f };
+                    b.Blend = bl;
                     g.FillPath(b, gp);
                 }
-                using (Pen p = new Pen(edge, 1.2f)) { g.DrawPath(p, gp); }
-                // لمعة علوية رفيعة تعطي احساس الزجاج/الكبسولة
-                Rectangle hi = new Rectangle(th.X + 3, th.Y + 1, th.Width - 6, Math.Max(2, th.Height / 3));
-                using (GraphicsPath hgp = Skin.Round(hi, hi.Height / 2))
-                using (Brush hb = new SolidBrush(Color.FromArgb(160, 255, 255, 255))) { g.FillPath(hb, hgp); }
+                using (Pen edge = new Pen(Color.FromArgb(100, 100, 100), 1.1f)) { g.DrawPath(edge, gp); }
             }
         }
 
@@ -646,17 +646,10 @@ namespace EaxReverbEngine
             if (raw == null) { Log.Write("cursor: no raw bytes - using system Hand cursor"); return Cursors.Hand; }
             Log.Write("cursor: raw bytes OK, len=" + raw.Length);
 
-            // محاولة اولى: تحميل من الذاكرة مباشرة - لا تحتاج كتابة ملف ولا صلاحيات،
-            // تشتغل حتى لو البرنامج مستضاف داخل عملية ثانية (DAW/Host) بصلاحيات محدودة
-            try
-            {
-                Cursor c = new Cursor(new MemoryStream(raw));
-                Log.Write("cursor: loaded OK from memory stream");
-                return c;
-            }
-            catch (Exception ex) { Log.Write("cursor: memory-stream load failed: " + ex); }
-
-            // محاولة ثانية (احتياط): كتابة ملف .cur حقيقي وتحميله عن طريق وندوز نفسه
+            // السبب الحقيقي للموشر الاسود: System.Windows.Forms.Cursor(Stream) فيها خلل معروف
+            // بتحميل مؤشرات الوان 32-bit ARGB - ما ترمي استثناء، بس ترسمها سوداء/مكسورة.
+            // لازم نحمّل بأول محاولة عن طريق LoadCursorFromFile (API وندوز الحقيقي، يرسم الالوان صح
+            // دايما)، ونخلي تحميل الذاكرة احتياط اخير بس.
             try
             {
                 string dir = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CreativeEAXSettings");
@@ -677,6 +670,15 @@ namespace EaxReverbEngine
                 Log.Write("cursor: LoadCursorFromFile returned NULL, path=" + _curPath + " win32err=" + Marshal.GetLastWin32Error());
             }
             catch (Exception ex) { Log.Write("cursor: file-based load failed: " + ex); }
+
+            // احتياط اخير فقط لو ملف وندوز فشل كليا (نادر) - نقبل خطر اللون الاسود بدل ما نرجع للسهم العادي
+            try
+            {
+                Cursor c = new Cursor(new MemoryStream(raw));
+                Log.Write("cursor: loaded OK from memory stream (fallback)");
+                return c;
+            }
+            catch (Exception ex) { Log.Write("cursor: memory-stream load failed: " + ex); }
 
             Log.Write("cursor: ALL load attempts failed - falling back to system Hand cursor");
             return Cursors.Hand;   // لا نستخدم اي رسم يدوي بديل، تفاديا لمؤشر اسود
