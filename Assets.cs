@@ -28,12 +28,54 @@ namespace EaxReverbEngine
 
         private static readonly Dictionary<string, Bitmap> Cache = new Dictionary<string, Bitmap>();
 
+        // مجلد الصور المخصصة (الـ Skin) - اي صورة PNG هني تحل محل الشكل الافتراضي بنفس الاسم
+        public static string SkinDir()
+        {
+            string d = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData), "CreativeEAXSettings", "skin");
+            try { Directory.CreateDirectory(d); } catch (Exception) { }
+            return d;
+        }
+
+        public static string OverridePath(string name) { return Path.Combine(SkinDir(), name + ".png"); }
+        public static bool HasOverride(string name) { try { return File.Exists(OverridePath(name)); } catch (Exception) { return false; } }
+
+        // اسماء كل العناصر القابلة للتخصيص + وصف عربي قصير لكل وحدة (تستخدمها نافذة التخصيص)
+        public static readonly string[] OverridableNames = new string[]
+        {
+            "thumb_h", "groove_h", "thumb_v",
+            "hdr_eq", "hdr_mix", "hdr_spk", "bar_tile",
+            "ic_grid", "ic_caps", "ic_woof", "ic_plus", "ic_swirl",
+            "spk_on", "spk_off",
+            "btn_bass", "btn_stereo", "btn_surround"
+        };
+        public static readonly string[] OverridableLabels = new string[]
+        {
+            "مقبض سلايدر افقي", "مجرى سلايدر افقي", "مقبض سلايدر عمودي",
+            "ترويسة Equalizer", "ترويسة Mixer", "ترويسة Speaker", "شريط سفلي",
+            "ايقونة EQ", "ايقونة Mixer", "ايقونة Speaker", "ايقونة Plus", "ايقونة Swirl",
+            "سماعة مفعّلة", "سماعة مطفية",
+            "زر Bass Boost", "زر Stereo", "زر Surround"
+        };
+
         public static Bitmap Get(string name)
         {
             lock (Cache)
             {
                 Bitmap b;
                 if (Cache.TryGetValue(name, out b)) return b;
+                // اولا: صورة مخصصة من المستخدم لو موجودة
+                try
+                {
+                    string op = OverridePath(name);
+                    if (File.Exists(op))
+                    {
+                        using (Bitmap raw = new Bitmap(op)) { b = new Bitmap(raw); }
+                        Cache[name] = b;
+                        return b;
+                    }
+                }
+                catch (Exception) { }
+                // غير كذا: الصورة الافتراضية المدمجة بالكود
                 try
                 {
                     string s;
@@ -50,6 +92,30 @@ namespace EaxReverbEngine
                 Cache[name] = b;
                 return b;
             }
+        }
+
+        // يحفظ صورة جديدة مكان name ويفضّي الكاش حتى تنعكس فورا بكل مكان تستخدم فيه
+        public static bool SetOverride(string name, string sourceFile)
+        {
+            try
+            {
+                using (Bitmap src = new Bitmap(sourceFile))
+                using (Bitmap clean = new Bitmap(src.Width, src.Height, System.Drawing.Imaging.PixelFormat.Format32bppArgb))
+                {
+                    using (Graphics g = Graphics.FromImage(clean)) { g.DrawImageUnscaled(src, 0, 0); }
+                    clean.Save(OverridePath(name), System.Drawing.Imaging.ImageFormat.Png);
+                }
+                lock (Cache) { Cache.Remove(name); }
+                return true;
+            }
+            catch (Exception) { return false; }
+        }
+
+        // يرجع الشكل الافتراضي (يحذف الصورة المخصصة)
+        public static void ResetOverride(string name)
+        {
+            try { string p = OverridePath(name); if (File.Exists(p)) File.Delete(p); } catch (Exception) { }
+            lock (Cache) { Cache.Remove(name); }
         }
     }
 }

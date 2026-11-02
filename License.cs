@@ -1,28 +1,24 @@
 using System;
 using System.Globalization;
 using System.IO;
-using System.Net;
+using System.Security.Cryptography;
 using System.Text;
+using Microsoft.Win32;
 
 namespace EaxReverbEngine
 {
-    internal enum LicState { Ok, NoKey, BadKey, Revoked, Expired, NoServer }
+    internal enum LicState { Ok, NoKey, BadKey, WrongHwid, Expired, ClockTampered }
 
-    // نظام اشتراك بسيط بدون سيرفر حقيقي - مو مربوط بجهاز (HWID).
-    // البرنامج يقرأ ملف نصي عام (licenses.txt) من GitHub Pages، سطر لكل عميل:
-    //   KEY|STATUS|PLAN|EXPIRES
-    // تلغي اشتراك اي عميل بأي وقت بس بفتح الملف بـ GitHub وتبدل ACTIVE الى REVOKED وتعمل Commit.
-    // شوف LicenseData/README.txt لخطوات الاعداد (GitHub Pages، بدون استضافة/سيرفر منفصل).
+    // نظام الاشتراك: مفتاح موقّع (ECDSA P-256) مربوط بـ HWID الجهاز
+    // اسبوع (W) / شهر (M) / مدى الحياة (L)
     internal static class License
     {
-        // رابط ملف الملخصات النصي (raw) بعد ما تفعّل GitHub Pages - بدله برابطك الحقيقي
-        private const string ServerUrl = "https://YOUR-USERNAME.github.io/license-data/licenses.txt";
+        // المفتاح العام (الخاص عندك فقط داخل KeyGen.html)
+        private const string PubX = "de0f0fca199977d9aa42a5e16cf2e7ed9d19af0760dd61f30624c50a008d49b2";
+        private const string PubY = "e10646500401a91d5528dd7186dc5d9c41f5f9d07050d324309d251118e8bbcf";
 
         public static string PlanName = "";
-        public static DateTime? Expiry = null; // null = Lifetime او بدون تاريخ معروف
-
-        // كم يوم نسمح للبرنامج يشتغل بدون ما يوصل للسيرفر (مثلا انقطاع نت مؤقت عند العميل)
-        private const int GraceDays = 3;
+        public static DateTime Expiry = DateTime.MaxValue;
 
         private static string Dir()
         {
@@ -31,154 +27,153 @@ namespace EaxReverbEngine
             return d;
         }
 
-        private static string KeyFile() { return Path.Combine(Dir(), "license.key"); }
-        private static string CacheFile() { return Path.Combine(Dir(), "license.cache"); }
+        private static byte[] Hex(string s)
+        {
+            byte[] b = new byte[s.Length / 2];
+            for (int i = 0; i < b.Length; i++) b[i] = Convert.ToByte(s.Substring(i * 2, 2), 16);
+            return b;
+        }
+
+        private static string RegVal(RegistryHive hive, string path, string name)
+        {
+            try
+            {
+                using (RegistryKey bk = RegistryKey.OpenBaseKey(hive, RegistryView.Registry64))
+                using (RegistryKey k = bk.OpenSubKey(path))
+                {
+                    if (k == null) return "";
+                    object v = k.GetValue(name);
+                    return v == null ? "" : v.ToString();
+                }
+            }
+            catch (Exception) { return ""; }
+        }
+
+        // بصمة الجهاز: 20 خانة hex
+        public static string Hwid()
+        {
+            StringBuilder sb = new StringBuilder();
+            sb.Append(RegVal(RegistryHive.LocalMachine, @"SOFTWARE\Microsoft\Cryptography", "MachineGuid"));
+            sb.Append("|").Append(RegVal(RegistryHive.LocalMachine, @"HARDWARE\DESCRIPTION\System\CentralProcessor\0", "ProcessorNameString"));
+            sb.Append("|").Append(RegVal(RegistryHive.LocalMachine, @"HARDWARE\DESCRIPTION\System\CentralProcessor\0", "Identifier"));
+            sb.Append("|").Append(RegVal(RegistryHive.LocalMachine, @"HARDWARE\DESCRIPTION\System\BIOS", "BaseBoardProduct"));
+            sb.Append("|").Append(RegVal(RegistryHive.LocalMachine, @"HARDWARE\DESCRIPTION\System\BIOS", "SystemProductName"));
+            using (SHA256 h = SHA256.Create())
+            {
+                byte[] d = h.ComputeHash(Encoding.UTF8.GetBytes("EAXLIC1|" + sb));
+                StringBuilder o = new StringBuilder();
+                for (int i = 0; i < 10; i++) o.Append(d[i].ToString("X2"));
+                return o.ToString();
+            }
+        }
+
+        public static string HwidPretty()
+        {
+            string h = Hwid();
+            return h.Substring(0, 4) + "-" + h.Substring(4, 4) + "-" + h.Substring(8, 4) + "-" + h.Substring(12, 4) + "-" + h.Substring(16, 4);
+        }
+
+        private static bool VerifySig(byte[] data, byte[] sig)
+        {
+            try
+            {
+                byte[] blob = new byte[8 + 64];
+                BitConverter.GetBytes(0x31534345).CopyTo(blob, 0);
+                BitConverter.GetBytes(32).CopyTo(blob, 4);
+                Hex(PubX).CopyTo(blob, 8);
+                Hex(PubY).CopyTo(blob, 40);
+                using (CngKey key = CngKey.Import(blob, CngKeyBlobFormat.EccPublicBlob))
+                using (ECDsaCng ec = new ECDsaCng(key))
+                {
+                    ec.HashAlgorithm = CngAlgorithm.Sha256;
+                    return ec.VerifyData(data, sig);
+                }
+            }
+            catch (Exception) { return false; }
+        }
+
+        private static byte[] FromB64Url(string s)
+        {
+            s = s.Replace('-', '+').Replace('_', '/');
+            while (s.Length % 4 != 0) s += "=";
+            return Convert.FromBase64String(s);
+        }
+
+        // يتحقق من نص المفتاح (بدون كتابة اي شيء)
+        public static LicState Validate(string key)
+        {
+            PlanName = ""; Expiry = DateTime.MaxValue;
+            if (string.IsNullOrEmpty(key)) return LicState.NoKey;
+            try
+            {
+                key = key.Trim().Replace("\r", "").Replace("\n", "").Replace(" ", "");
+                byte[] all = FromB64Url(key);
+                if (all.Length < 70) return LicState.BadKey;
+                int len = all[0];
+                if (len < 10 || 1 + len + 64 != all.Length) return LicState.BadKey;
+                byte[] data = new byte[len];
+                Array.Copy(all, 1, data, 0, len);
+                byte[] sig = new byte[64];
+                Array.Copy(all, 1 + len, sig, 0, 64);
+                if (!VerifySig(data, sig)) return LicState.BadKey;
+                string[] p = Encoding.ASCII.GetString(data).Split('|');
+                if (p.Length != 3) return LicState.BadKey;
+                if (!string.Equals(p[0], Hwid(), StringComparison.OrdinalIgnoreCase)) return LicState.WrongHwid;
+                if (p[1] == "L") { PlanName = "Lifetime"; Expiry = DateTime.MaxValue; }
+                else
+                {
+                    DateTime exp;
+                    if (!DateTime.TryParseExact(p[2], "yyyyMMdd", CultureInfo.InvariantCulture, DateTimeStyles.AssumeUniversal | DateTimeStyles.AdjustToUniversal, out exp)) return LicState.BadKey;
+                    PlanName = p[1] == "W" ? "Weekly" : (p[1] == "M" ? "Monthly" : "Custom");
+                    Expiry = exp.AddDays(1);
+                    if (DateTime.UtcNow >= Expiry) return LicState.Expired;
+                }
+                if (ClockBack()) return LicState.ClockTampered;
+                return LicState.Ok;
+            }
+            catch (Exception) { return LicState.BadKey; }
+        }
+
+        private static string StampFile() { return Path.Combine(Dir(), "lic.stamp"); }
+
+        // كشف ارجاع الوقت للخلف
+        private static bool ClockBack()
+        {
+            try
+            {
+                long last = 0;
+                string f = StampFile();
+                if (File.Exists(f)) long.TryParse(File.ReadAllText(f).Trim(), out last);
+                try
+                {
+                    object v = Registry.GetValue(@"HKEY_CURRENT_USER\Software\CreativeEAXSettings", "ls", null);
+                    long rv;
+                    if (v != null && long.TryParse(v.ToString(), out rv) && rv > last) last = rv;
+                }
+                catch (Exception) { }
+                long now = DateTime.UtcNow.Ticks;
+                if (last > 0 && now < last - TimeSpan.TicksPerHour * 36) return true;
+                long keep = Math.Max(now, last);
+                File.WriteAllText(f, keep.ToString());
+                try { Registry.SetValue(@"HKEY_CURRENT_USER\Software\CreativeEAXSettings", "ls", keep.ToString()); } catch (Exception) { }
+                return false;
+            }
+            catch (Exception) { return false; }
+        }
 
         public static string Load()
         {
-            try { return File.Exists(KeyFile()) ? File.ReadAllText(KeyFile()).Trim() : ""; }
+            try
+            {
+                string f = Path.Combine(Dir(), "license.key");
+                return File.Exists(f) ? File.ReadAllText(f).Trim() : "";
+            }
             catch (Exception) { return ""; }
         }
 
         public static void Store(string key)
         {
-            try { File.WriteAllText(KeyFile(), key.Trim()); } catch (Exception) { }
-        }
-
-        // يحمل ملف النصوص كامل (كل مرة - بدون كاش HTTP حتى ما ياخذ نسخة قديمة محفوظة بالمتصفح/الشبكة)
-        private static string FetchFile()
-        {
-            try
-            {
-                ServicePointManager.SecurityProtocol |= SecurityProtocolType.Tls12;
-                string url = ServerUrl + (ServerUrl.IndexOf('?') >= 0 ? "&" : "?") + "t=" + DateTime.UtcNow.Ticks;
-                HttpWebRequest req = (HttpWebRequest)WebRequest.Create(url);
-                req.Method = "GET";
-                req.Timeout = 8000;
-                req.ReadWriteTimeout = 8000;
-                req.UserAgent = "EaxReverbEngine-LicenseClient";
-                req.CachePolicy = new System.Net.Cache.RequestCachePolicy(System.Net.Cache.RequestCacheLevel.NoCacheNoStore);
-                using (HttpWebResponse resp = (HttpWebResponse)req.GetResponse())
-                using (Stream s = resp.GetResponseStream())
-                using (StreamReader rd = new StreamReader(s, Encoding.UTF8))
-                {
-                    return rd.ReadToEnd();
-                }
-            }
-            catch (Exception) { return null; } // نت مقطوع او الملف مو موصول - نرجع null ونعتمد على الكاش
-        }
-
-        // يدور سطر المفتاح داخل الملف: KEY|STATUS|PLAN|EXPIRES  (اسطر تبدأ بـ # تتجاهل)
-        private static string FindLine(string text, string key)
-        {
-            if (text == null) return null;
-            string[] lines = text.Replace("\r", "").Split('\n');
-            foreach (string raw in lines)
-            {
-                string line = raw.Trim();
-                int hash = line.IndexOf('#');
-                if (hash >= 0) line = line.Substring(0, hash).Trim(); // يشيل تعليق # بآخر السطر لو موجود
-                if (line.Length == 0) continue;
-                int i = line.IndexOf('|');
-                if (i <= 0) continue;
-                string k = line.Substring(0, i).Trim();
-                if (string.Equals(k, key, StringComparison.OrdinalIgnoreCase)) return line;
-            }
-            return null;
-        }
-
-        private static void WriteCache(string status, string plan, string expiresIso)
-        {
-            try
-            {
-                string line = DateTime.UtcNow.Ticks + "|" + status + "|" + plan + "|" + expiresIso;
-                File.WriteAllText(CacheFile(), line);
-            }
-            catch (Exception) { }
-        }
-
-        private static bool ReadCache(out string status, out string plan, out string expiresIso, out DateTime lastOk)
-        {
-            status = ""; plan = ""; expiresIso = ""; lastOk = DateTime.MinValue;
-            try
-            {
-                if (!File.Exists(CacheFile())) return false;
-                string[] p = File.ReadAllText(CacheFile()).Trim().Split('|');
-                if (p.Length < 4) return false;
-                long ticks;
-                if (!long.TryParse(p[0], out ticks)) return false;
-                lastOk = new DateTime(ticks, DateTimeKind.Utc);
-                status = p[1]; plan = p[2]; expiresIso = p[3];
-                return true;
-            }
-            catch (Exception) { return false; }
-        }
-
-        private static LicState FromStatus(string status, string plan, string expiresIso)
-        {
-            PlanName = plan;
-            Expiry = null;
-            DateTime exp;
-            if (DateTime.TryParse(expiresIso, CultureInfo.InvariantCulture,
-                DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out exp))
-            {
-                Expiry = exp;
-            }
-
-            switch (status)
-            {
-                case "ACTIVE": return LicState.Ok;
-                case "REVOKED": return LicState.Revoked;
-                case "EXPIRED": return LicState.Expired;
-                case "NOTFOUND": return LicState.BadKey;
-                default: return LicState.BadKey;
-            }
-        }
-
-        // يتحقق من مفتاح: يحمل ملف النصوص ويدور السطر، ولو ما وصل يستخدم اخر نتيجة محفوظة ضمن فترة سماح
-        public static LicState Validate(string key)
-        {
-            PlanName = ""; Expiry = null;
-            key = (key ?? "").Trim();
-            if (string.IsNullOrEmpty(key)) return LicState.NoKey;
-            if (key.Length < 8) return LicState.BadKey;
-
-            string text = FetchFile();
-            if (text != null)
-            {
-                string line = FindLine(text, key);
-                if (line == null)
-                {
-                    WriteCache("NOTFOUND", "", "");
-                    return LicState.BadKey;
-                }
-                string[] f = line.Split('|');
-                string status = (f.Length > 1 ? f[1] : "").Trim().ToUpperInvariant();
-                string plan = (f.Length > 2 ? f[2] : "").Trim();
-                string expText = (f.Length > 3 ? f[3] : "").Trim();
-
-                // لو التاريخ المكتوب بالملف فات، نعتبرها منتهية حتى لو حد نسى يبدلها يدوي
-                DateTime expDate;
-                bool hasExp = DateTime.TryParse(expText, CultureInfo.InvariantCulture,
-                    DateTimeStyles.AdjustToUniversal | DateTimeStyles.AssumeUniversal, out expDate);
-                if (status == "ACTIVE" && hasExp && DateTime.UtcNow >= expDate) status = "EXPIRED";
-
-                string expIso = hasExp ? expDate.ToString("o") : "";
-                WriteCache(status, plan, expIso);
-                return FromStatus(status, plan, expIso);
-            }
-
-            // ما قدرنا نوصل للملف - نسمح بفترة سماح قصيرة بناء على اخر تحقق ناجح فقط
-            string cStatus, cPlan, cExp; DateTime lastOk;
-            if (ReadCache(out cStatus, out cPlan, out cExp, out lastOk))
-            {
-                bool clockOk = DateTime.UtcNow >= lastOk; // لو الساعة رجعت للخلف نعتبرها غير موثوقة
-                if (cStatus == "ACTIVE" && clockOk && (DateTime.UtcNow - lastOk).TotalDays <= GraceDays)
-                {
-                    return FromStatus(cStatus, cPlan, cExp);
-                }
-            }
-            return LicState.NoServer;
+            try { File.WriteAllText(Path.Combine(Dir(), "license.key"), key.Trim()); } catch (Exception) { }
         }
 
         public static LicState Check() { return Validate(Load()); }
@@ -188,15 +183,12 @@ namespace EaxReverbEngine
             switch (s)
             {
                 case LicState.Ok:
-                    return Expiry.HasValue
-                        ? "Active - " + PlanName + " - expires " + Expiry.Value.ToString("yyyy-MM-dd")
-                        : "Active - " + PlanName;
+                    return PlanName == "Lifetime" ? "Active - Lifetime" : "Active - " + PlanName + " - expires " + Expiry.AddDays(-1).ToString("yyyy-MM-dd");
                 case LicState.NoKey: return "No license key.";
                 case LicState.BadKey: return "Invalid license key.";
-                case LicState.Revoked: return "This subscription was cancelled.";
+                case LicState.WrongHwid: return "This key belongs to another device.";
                 case LicState.Expired: return "Subscription expired.";
-                case LicState.NoServer: return "Can't reach the license server. Check your internet connection.";
-                default: return "Unknown license state.";
+                default: return "System clock was changed.";
             }
         }
     }

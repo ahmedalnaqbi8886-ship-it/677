@@ -103,7 +103,19 @@ namespace EaxReverbEngine
                 using (Pen pen = new Pen(edge, edgeW)) { g.DrawPath(pen, p); }
             }
             float cx = Width / 2f, cy = Height * 0.4f;
-            if (_kind == Kind.Bass) Speaker(g, cx - 3f, cy, 1.3f, fg, 3, 0);
+            // لو فيه صورة مخصصة مختارة من المستخدم (Browse) نرسمها بدل الايقونة المرسومة بالكود
+            string ovName = _kind == Kind.Bass ? "btn_bass" : (_kind == Kind.Stereo ? "btn_stereo" : "btn_surround");
+            Bitmap ov = Assets.HasOverride(ovName) ? Assets.Get(ovName) : null;
+            if (ov != null)
+            {
+                int iw = Math.Min(ov.Width, Width - 10);
+                int ih = Math.Min(ov.Height, (int)(Height * 0.62f));
+                float scale = Math.Min((float)iw / ov.Width, (float)ih / ov.Height);
+                int dw = Math.Max(1, (int)(ov.Width * scale));
+                int dh = Math.Max(1, (int)(ov.Height * scale));
+                g.DrawImage(ov, (int)(cx - dw / 2f), (int)(cy - dh / 2f), dw, dh);
+            }
+            else if (_kind == Kind.Bass) Speaker(g, cx - 3f, cy, 1.3f, fg, 3, 0);
             else if (_kind == Kind.Stereo)
             {
                 Speaker(g, cx - 14f, cy, 0.85f, fg, 1, 0);

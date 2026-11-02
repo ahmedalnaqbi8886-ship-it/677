@@ -12,7 +12,7 @@ namespace EaxReverbEngine
         public static bool Ensure()
         {
             LicState s = License.Check();
-            Log.Write("license: " + License.Describe(s));
+            Log.Write("license: " + License.Describe(s) + " hwid=" + License.Hwid());
             if (s == LicState.Ok) return true;
             using (LicenseWindow w = new LicenseWindow(s))
             {
@@ -45,6 +45,7 @@ namespace EaxReverbEngine
     {
         public bool Activated;
         private readonly TextBox _key = new TextBox();
+        private readonly TextBox _hw = new TextBox();
         private readonly Label _status = new Label();
         private readonly SkinButton _act = new SkinButton();
         private readonly SkinButton _close = new SkinButton();
@@ -70,20 +71,46 @@ namespace EaxReverbEngine
             Controls.Add(title);
 
             Label plans = new Label();
-            plans.Text = "Plans: Weekly  |  Monthly  |  Lifetime";
+            plans.Text = "Plans: Weekly  |  Monthly  |  Lifetime  (bound to this device)";
             plans.ForeColor = Color.FromArgb(90, 90, 90);
             plans.SetBounds(16, 40, 480, 16);
             plans.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             Controls.Add(plans);
 
+            Label h = new Label();
+            h.Text = "Your device ID (HWID) - send it to get a key:";
+            h.SetBounds(16, 68, 480, 16);
+            h.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            Controls.Add(h);
+
+            _hw.ReadOnly = true;
+            _hw.Text = License.HwidPretty();
+            _hw.Font = new Font("Consolas", 12f, FontStyle.Bold);
+            _hw.SetBounds(16, 88, 384, 28);
+            _hw.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
+            // اضغطة بسيطة تسهّل التحديد: تحديد كامل تلقائي عند الدخول، وتحديد بالنقر
+            _hw.Enter += delegate { _hw.SelectAll(); };
+            _hw.Click += delegate { _hw.SelectAll(); };
+            Controls.Add(_hw);
+
+            SkinButton copy = new SkinButton();
+            copy.Text = "Copy";
+            copy.SetBounds(406, 88, 98, 28);
+            copy.Anchor = AnchorStyles.Top | AnchorStyles.Right;
+            copy.Click += delegate
+            {
+                try { Clipboard.SetText(_hw.Text); Flash("HWID copied.", false); } catch (Exception) { }
+            };
+            Controls.Add(copy);
+
             Label k = new Label();
             k.Text = "License key (paste the one you received):";
-            k.SetBounds(16, 68, 400, 16);
+            k.SetBounds(16, 128, 400, 16);
             k.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             Controls.Add(k);
 
             _key.Multiline = true;
-            _key.SetBounds(16, 88, 488, 166);
+            _key.SetBounds(16, 148, 488, 110);
             _key.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right | AnchorStyles.Bottom;
             _key.Font = new Font("Consolas", 10f);
             _key.ScrollBars = ScrollBars.Vertical;
