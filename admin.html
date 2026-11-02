@@ -1,0 +1,135 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<title>License Admin</title>
+<style>
+  body{font-family:Segoe UI,Tahoma,Arial,sans-serif;background:#f4f5f7;margin:0;padding:24px;color:#222}
+  .card{background:#fff;border:1px solid #ddd;border-radius:8px;padding:16px 20px;margin-bottom:16px;max-width:980px}
+  h1{font-size:16px;margin:0 0 10px}
+  label{display:block;margin:10px 0 4px;font-size:12px;color:#555}
+  input,select{padding:7px 9px;border:1px solid #ccc;border-radius:4px;font-size:13px}
+  button{padding:8px 16px;border:0;border-radius:4px;background:#1f6fd6;color:#fff;cursor:pointer;font-size:13px;margin-top:10px}
+  button:hover{background:#1a5bb0}
+  button.danger{background:#c23b3b}
+  button.danger:hover{background:#a52f2f}
+  button.small{padding:4px 10px;font-size:12px;margin:2px}
+  table{border-collapse:collapse;width:100%;font-size:12px;margin-top:10px}
+  td,th{border:1px solid #e3e3e3;padding:6px 8px;text-align:left;vertical-align:middle}
+  th{background:#fafafa}
+  .rev{color:#b00;font-weight:bold}
+  .exp{color:#b58900;font-weight:bold}
+  .act{color:#0a0;font-weight:bold}
+  .key{font-family:Consolas,monospace}
+  #msg{font-size:12px;margin-top:8px;color:#0a0}
+</style>
+</head>
+<body>
+
+<div class="card">
+  <h1>License server — admin</h1>
+  <label>Admin key</label>
+  <input id="admin" type="password" style="width:340px" placeholder="paste your ADMIN_KEY">
+  <br><button onclick="unlock()">Unlock</button>
+  <div id="msg"></div>
+</div>
+
+<div class="card" id="issueBox" style="display:none">
+  <h1>Issue a new key</h1>
+  <label>Customer's HWID (they get this from the Activation window)</label>
+  <input id="hwid" style="width:340px" placeholder="e.g. A1B2-C3D4-E5F6-0708-090A">
+  <label>Plan</label>
+  <select id="plan">
+    <option>Weekly</option>
+    <option selected>Monthly</option>
+    <option>Lifetime</option>
+  </select>
+  <label>Days (ignored for Lifetime)</label>
+  <input id="days" type="number" value="30" style="width:100px">
+  <label>Note (customer name/email — for your own reference only)</label>
+  <input id="note" style="width:340px">
+  <br><button onclick="issue()">Issue key</button>
+  <div id="issueResult" style="margin-top:10px;font-size:13px"></div>
+</div>
+
+<div class="card" id="listBox" style="display:none">
+  <h1>All keys</h1>
+  <button class="small" onclick="load()">Refresh</button>
+  <table id="tbl">
+    <thead><tr><th>Key</th><th>HWID</th><th>Plan</th><th>Issued</th><th>Expires</th><th>Status</th><th>Note</th><th>Actions</th></tr></thead>
+    <tbody></tbody>
+  </table>
+</div>
+
+<script>
+function admKey(){ return document.getElementById('admin').value.trim(); }
+
+function unlock(){
+  var k = admKey();
+  if (!k) { document.getElementById('msg').textContent = 'Enter the admin key first.'; return; }
+  sessionStorage.setItem('admKey', k);
+  document.getElementById('issueBox').style.display = 'block';
+  document.getElementById('listBox').style.display = 'block';
+  document.getElementById('msg').textContent = 'Unlocked.';
+  load();
+}
+
+window.onload = function(){
+  var k = sessionStorage.getItem('admKey');
+  if (k) { document.getElementById('admin').value = k; unlock(); }
+};
+
+function api(p, method){
+  var sep = p.indexOf('?') >= 0 ? '&' : '?';
+  return fetch(p + sep + 'admin=' + encodeURIComponent(admKey()), { method: method || 'GET' });
+}
+
+function issue(){
+  var hwid = document.getElementById('hwid').value.trim();
+  if (!hwid) { document.getElementById('issueResult').textContent = 'Paste the customer\'s HWID first.'; return; }
+  var plan = document.getElementById('plan').value;
+  var days = document.getElementById('days').value;
+  var note = encodeURIComponent(document.getElementById('note').value);
+  api('/admin/issue?plan=' + plan + '&days=' + days + '&note=' + note + '&hwid=' + encodeURIComponent(hwid), 'POST')
+    .then(function(r){ return r.json(); })
+    .then(function(rec){
+      document.getElementById('issueResult').innerHTML = 'New key: <span class="key">' + rec.key + '</span> (copy this to the customer)';
+      document.getElementById('hwid').value = '';
+      load();
+    })
+    .catch(function(e){ document.getElementById('issueResult').textContent = 'Error: ' + e; });
+}
+
+function load(){
+  api('/admin/list').then(function(r){ return r.json(); }).then(function(list){
+    var tb = document.querySelector('#tbl tbody');
+    tb.innerHTML = '';
+    list.slice().reverse().forEach(function(r){
+      var tr = document.createElement('tr');
+      var status;
+      if (r.revoked) status = '<span class="rev">Revoked</span>';
+      else if (r.expires && new Date(r.expires).getTime() <= Date.now()) status = '<span class="exp">Expired</span>';
+      else status = '<span class="act">Active</span>';
+      var actions = r.revoked
+        ? '<button class="small" onclick="act(\'' + r.key + '\',\'reactivate\')">Reactivate</button>'
+        : '<button class="small danger" onclick="act(\'' + r.key + '\',\'revoke\')">Revoke</button>';
+      actions += ' <button class="small" onclick="ext(\'' + r.key + '\')">+30d</button>';
+      actions += ' <button class="small" onclick="rebind(\'' + r.key + '\')">Rebind HWID</button>';
+      tr.innerHTML = '<td class="key">' + r.key + '</td><td class="key">' + (r.hwid || '') + '</td><td>' + r.plan + '</td><td>' + (r.issued || '').slice(0,10) +
+        '</td><td>' + (r.expires ? r.expires.slice(0,10) : '-') + '</td><td>' + status + '</td><td>' + (r.note || '') +
+        '</td><td>' + actions + '</td>';
+      tb.appendChild(tr);
+    });
+  });
+}
+
+function act(key, which){ api('/admin/' + which + '?key=' + encodeURIComponent(key), 'POST').then(load); }
+function ext(key){ api('/admin/extend?key=' + encodeURIComponent(key) + '&days=30', 'POST').then(load); }
+function rebind(key){
+  var hwid = prompt('New HWID for this key (from the customer\'s new Activation window):');
+  if (!hwid) return;
+  api('/admin/rebind?key=' + encodeURIComponent(key) + '&hwid=' + encodeURIComponent(hwid.trim()), 'POST').then(load);
+}
+</script>
+</body>
+</html>
