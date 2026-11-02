@@ -160,8 +160,8 @@ namespace EaxReverbEngine
             def.Click += delegate { DoDefault(); Reload(); };
             _bar.Controls.Add(def);
 
-            string[] kinds = new string[] { "eq", "speaker", "mixer", "eax" };
-            string[] tips = new string[] { "Equalizer", "Speaker Settings", "Surround Mixer", "EAX Settings" };
+            string[] kinds = new string[] { "eq", "speaker", "mixer" };
+            string[] tips = new string[] { "Equalizer", "Speaker Settings", "Surround Mixer" };
             ToolTip tt = new ToolTip();
             for (int i = 0; i < kinds.Length; i++)
             {
