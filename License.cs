@@ -18,7 +18,7 @@ namespace EaxReverbEngine
         // رابط سيرفر التراخيص (Render) - بدّله برابطك الحقيقي بعد ما تنشره (بدون / بالاخر).
         // او بدل ما تعدل الكود: حط ملف اسمه license_url.txt فيه الرابط بمجلد
         // %AppData%\CreativeEAXSettings على جهاز العميل، وياخذ الاولوية على هذا الثابت.
-        private const string DefaultServerUrl = "https://YOUR-LICENSE-SERVER.onrender.com";
+        private const string DefaultServerUrl = "https://n7-r67.onrender.com";
         private const int GraceDays = 3;
         private const int TimeoutMs = 8000;
 
