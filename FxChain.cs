@@ -32,6 +32,9 @@ namespace EaxReverbEngine
         private float _bassCut = 100f, _bmPct = 100f, _bmCross = 80f;
         private bool _eqOn = true, _bassOn = true, _bmOn;
         private int _spkMode;
+        private bool _eaxOn;
+        private int _eaxAmount;
+        private string _eaxPreset = "Auditorium";
         private float _fs = 48000f;
         private float _lpA;
         private float _gL = 1f, _gR = 1f;
@@ -83,6 +86,11 @@ namespace EaxReverbEngine
         public bool StereoOn { get { lock (_lock) { return _stereoOn; } } set { lock (_lock) { _stereoOn = value; } } }
         public bool Mute { get { lock (_lock) { return _mute; } } set { lock (_lock) { _mute = value; _dirty = true; } } }
         public int SpeakerMode { get { lock (_lock) { return _spkMode; } } set { lock (_lock) { _spkMode = value < 0 ? 0 : (value > 2 ? 2 : value); } } }
+
+        // EAX Settings / Effects: البيئة الصوتية (Environment) المختارة ونسبة التأثير
+        public bool EaxOn { get { lock (_lock) { return _eaxOn; } } set { lock (_lock) { _eaxOn = value; } } }
+        public int EaxAmount { get { lock (_lock) { return _eaxAmount; } } set { lock (_lock) { int v = value; _eaxAmount = v < 0 ? 0 : (v > 100 ? 100 : v); } } }
+        public string EaxPreset { get { lock (_lock) { return _eaxPreset; } } set { lock (_lock) { _eaxPreset = string.IsNullOrEmpty(value) ? _eaxPreset : value; } } }
 
         public void ResetEq()
         {
@@ -357,6 +365,9 @@ namespace EaxReverbEngine
                 L.Add("BmPct=" + F(_bmPct));
                 L.Add("BmCross=" + F(_bmCross));
                 L.Add("SpkMode=" + _spkMode);
+                L.Add("EaxOn=" + (_eaxOn ? "1" : "0"));
+                L.Add("EaxAmount=" + _eaxAmount);
+                L.Add("EaxPreset=" + _eaxPreset.Replace("\r", "").Replace("\n", ""));
                 File.WriteAllLines(Path.Combine(dir, "fx.ini"), L.ToArray());
             }
         }
@@ -370,8 +381,10 @@ namespace EaxReverbEngine
                 int eq = line.IndexOf('=');
                 if (eq <= 0) continue;
                 string k = line.Substring(0, eq).Trim();
+                string raw = line.Substring(eq + 1).Trim();
+                if (k == "EaxPreset") { EaxPreset = raw; continue; }
                 float v;
-                if (!float.TryParse(line.Substring(eq + 1).Trim(), NumberStyles.Float, CultureInfo.InvariantCulture, out v)) continue;
+                if (!float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out v)) continue;
                 if (k.StartsWith("Band"))
                 {
                     int i;
@@ -395,6 +408,8 @@ namespace EaxReverbEngine
                 else if (k == "BmPct") BmPercent = v;
                 else if (k == "BmCross") BmCrossover = v;
                 else if (k == "SpkMode") SpeakerMode = (int)v;
+                else if (k == "EaxOn") EaxOn = v != 0f;
+                else if (k == "EaxAmount") EaxAmount = (int)v;
             }
         }
     }

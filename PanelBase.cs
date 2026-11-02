@@ -62,7 +62,7 @@ namespace EaxReverbEngine
                 {
                     using (Pen p = new Pen(Color.FromArgb(sh[i], sh[i], sh[i]))) { g.DrawLine(p, 0, 36 + i, _head.Width, 36 + i); }
                 }
-                string an = _kind == "speaker" ? "hdr_spk" : (_kind == "mixer" ? "hdr_mix" : "hdr_eq");
+                string an = _kind == "speaker" ? "hdr_spk" : (_kind == "mixer" ? "hdr_mix" : (_kind == "eax" ? "hdr_fx" : "hdr_eq"));
                 Bitmap ic = Assets.Get(an);
                 if (ic != null) g.DrawImage(ic, 13, 4, ic.Width, ic.Height);
                 using (Font f = new Font("Tahoma", 10f, FontStyle.Bold))
@@ -134,8 +134,8 @@ namespace EaxReverbEngine
             def.Click += delegate { DoDefault(); Reload(); };
             _bar.Controls.Add(def);
 
-            string[] kinds = new string[] { "eq", "speaker", "mixer" };
-            string[] tips = new string[] { "Equalizer", "Speaker Settings", "Surround Mixer" };
+            string[] kinds = new string[] { "eq", "speaker", "mixer", "eax" };
+            string[] tips = new string[] { "Equalizer", "Speaker Settings", "Surround Mixer", "EAX Settings" };
             ToolTip tt = new ToolTip();
             for (int i = 0; i < kinds.Length; i++)
             {
