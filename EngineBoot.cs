@@ -70,10 +70,16 @@ namespace EaxReverbEngine
 				{
 					(IntPtr.Size == 8) ? "64" : "32"
 				});
+				if (!LicenseGate.Ensure())
+				{
+					Log.Write("license: not activated - standalone engine not started");
+					return null;
+				}
 				EngineBoot._cfg = EngineConfig.Load(text);
 				EngineBoot._engine = new Engine(text);
 				EngineBoot._engine.StartAudio(EngineBoot._cfg);
 				EngineBoot._engine.SetState(enabled, presetName, amount);
+				LicenseGate.Watch(delegate() { try { EngineBoot._engine.Stop(); } catch (Exception) { } });
 			}
 			catch (Exception arg)
 			{

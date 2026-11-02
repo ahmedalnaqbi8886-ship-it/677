@@ -27,6 +27,13 @@ namespace EaxReverbEngine
 		// Token: 0x06000070 RID: 112 RVA: 0x000051C0 File Offset: 0x000033C0
 		public void StartAudio(EngineConfig cfg)
 		{
+			// حارس اضافي هنا بنفس المستوى (مو بس بـ EngineBoot) حتى لو حد نادى StartAudio مباشرة
+			// بدون ما يمر على EngineBoot.Start/StartStandalone ما يشتغل بدون ترخيص صالح
+			if (!LicenseGate.Ensure())
+			{
+				Log.Write("license: not activated - StartAudio refused");
+				return;
+			}
 			string[] array = Wave.ListIn();
 			string[] array2 = Wave.ListOut();
 			Log.Write("capture devices:");
