@@ -39,7 +39,7 @@ namespace EaxReverbEngine
     internal sealed class CSlider : Control
     {
         private int _min, _max = 100, _val;
-        private bool _vert, _drag;
+        private bool _vert, _drag, _hover;
         public SliderKind Kind = SliderKind.Mixer;
         public bool Column;          // رسم عمود EQ (خلفية + حدود + ارقام + تدريج)
         public bool DarkGroove;      // مجرى غامق (المنزلقات النشطة في Mixer)
@@ -105,6 +105,8 @@ namespace EaxReverbEngine
             _drag = false; Capture = false;
             base.OnMouseUp(e);
         }
+        protected override void OnMouseEnter(EventArgs e) { _hover = true; Invalidate(); base.OnMouseEnter(e); }
+        protected override void OnMouseLeave(EventArgs e) { _hover = false; Invalidate(); base.OnMouseLeave(e); }
         protected override void OnMouseWheel(MouseEventArgs e)
         {
             int step = Math.Max(1, (_max - _min) / 20);
@@ -188,9 +190,9 @@ namespace EaxReverbEngine
                 using (Brush fillB = new SolidBrush(Color.FromArgb(188, 188, 192))) { g.FillRectangle(fillB, left, gy + 2, right - left, 1); }
                 using (Pen bot = new Pen(Color.FromArgb(253, 253, 253))) { g.DrawLine(bot, left, gy + 3, right, gy + 3); }
 
-                Rectangle th = new Rectangle(tx - 6, cy - 9, 12, 18);
-                DrawFlatThumb(g, th);
                 g.SmoothingMode = SmoothingMode.AntiAlias;
+                Rectangle th = new Rectangle(tx - 11, cy - 7, 22, 14);
+                DrawCapsuleThumb(g, th, _hover || _drag);
             }
         }
 
@@ -240,21 +242,30 @@ namespace EaxReverbEngine
             using (Brush hb = new SolidBrush(Color.FromArgb(150, 255, 255, 255))) { g.FillPath(hb, hgp); }
         }
 
-        // مقبض مسطح بسيط بدون لمعان ولا ظل - مطابق تماما لمقابض Bass Boost / Bass Management الاصلية
-        private static void DrawFlatThumb(Graphics g, Rectangle th)
+        // مقبض كبسولة لامعة لـ Bass Boost / Bass Management: فضي/ابيض بالوضع العادي، يتحول ازرق لما
+        // الماوس يكون فوقه او يسحبه (نفس الشكل اللي ارسله المستخدم: كبسولة بلمعة بيضاء فوق)
+        private static void DrawCapsuleThumb(Graphics g, Rectangle th, bool active)
         {
-            using (Brush fill = new SolidBrush(Color.FromArgb(248, 248, 250))) { g.FillRectangle(fill, th); }
-            using (Pen hi = new Pen(Color.FromArgb(253, 253, 253)))
+            using (GraphicsPath gp = Skin.Round(th, th.Height / 2))
             {
-                g.DrawLine(hi, th.X, th.Y, th.Right - 2, th.Y);
-                g.DrawLine(hi, th.X, th.Y, th.X, th.Bottom - 2);
+                Color top = active ? Color.FromArgb(236, 248, 255) : Color.White;
+                Color bot = active ? Color.FromArgb(0, 95, 210) : Color.FromArgb(162, 162, 168);
+                Color edge = active ? Color.FromArgb(0, 60, 150) : Color.FromArgb(120, 120, 126);
+                Rectangle sh = th; sh.Offset(0, 2);
+                using (GraphicsPath sgp = Skin.Round(sh, sh.Height / 2))
+                using (Brush sb = new SolidBrush(Color.FromArgb(45, 0, 0, 0))) { g.FillPath(sb, sgp); }
+
+                using (LinearGradientBrush b = new LinearGradientBrush(th, top, bot, 90f))
+                {
+                    b.Blend = Gloss();
+                    g.FillPath(b, gp);
+                }
+                using (Pen p = new Pen(edge, 1.2f)) { g.DrawPath(p, gp); }
+                // لمعة علوية رفيعة تعطي احساس الزجاج/الكبسولة
+                Rectangle hi = new Rectangle(th.X + 3, th.Y + 1, th.Width - 6, Math.Max(2, th.Height / 3));
+                using (GraphicsPath hgp = Skin.Round(hi, hi.Height / 2))
+                using (Brush hb = new SolidBrush(Color.FromArgb(160, 255, 255, 255))) { g.FillPath(hb, hgp); }
             }
-            using (Pen sh = new Pen(Color.FromArgb(145, 145, 145)))
-            {
-                g.DrawLine(sh, th.X + 1, th.Bottom - 1, th.Right - 1, th.Bottom - 1);
-                g.DrawLine(sh, th.Right - 1, th.Y + 1, th.Right - 1, th.Bottom - 1);
-            }
-            using (Pen edge = new Pen(Color.FromArgb(120, 120, 120))) { g.DrawRectangle(edge, th.X, th.Y, th.Width - 2, th.Height - 2); }
         }
 
         private static Blend _gloss;
