@@ -83,7 +83,13 @@ namespace EaxReverbEngine
 
             HelpArrowButton help = new HelpArrowButton();
             help.SetBounds(w - 122, 7, 58, 22);
-            help.HelpClick += delegate { MessageBox.Show(this, "Audio effects panel.\r\nEqualizer, Surround Mixer and Speaker Settings.", _title); };
+            help.HelpClick += delegate
+            {
+                MessageBox.Show(this,
+                    "Audio effects panel.\r\nEqualizer, Surround Mixer and Speaker Settings.\r\n\r\n" +
+                    "© ALNAQBI\r\nDiscord: https://discord.gg/n7-r",
+                    _title);
+            };
             _head.Controls.Add(help);
 
             Label min = new Label();

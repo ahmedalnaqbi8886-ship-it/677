@@ -183,9 +183,9 @@ namespace EaxReverbEngine
 
                 g.SmoothingMode = SmoothingMode.None;
                 int gy = cy - 2;
-                using (Pen top1 = new Pen(Color.FromArgb(142, 142, 142))) { g.DrawLine(top1, left, gy, right, gy); }
-                using (Pen top2 = new Pen(Color.FromArgb(176, 176, 176))) { g.DrawLine(top2, left, gy + 1, right, gy + 1); }
-                using (Brush fillB = new SolidBrush(Color.FromArgb(208, 208, 208))) { g.FillRectangle(fillB, left, gy + 2, right - left, 1); }
+                using (Pen top1 = new Pen(Color.FromArgb(118, 118, 122))) { g.DrawLine(top1, left, gy, right, gy); }
+                using (Pen top2 = new Pen(Color.FromArgb(150, 150, 154))) { g.DrawLine(top2, left, gy + 1, right, gy + 1); }
+                using (Brush fillB = new SolidBrush(Color.FromArgb(188, 188, 192))) { g.FillRectangle(fillB, left, gy + 2, right - left, 1); }
                 using (Pen bot = new Pen(Color.FromArgb(253, 253, 253))) { g.DrawLine(bot, left, gy + 3, right, gy + 3); }
 
                 Rectangle th = new Rectangle(tx - 6, cy - 9, 12, 18);
@@ -243,7 +243,7 @@ namespace EaxReverbEngine
         // مقبض مسطح بسيط بدون لمعان ولا ظل - مطابق تماما لمقابض Bass Boost / Bass Management الاصلية
         private static void DrawFlatThumb(Graphics g, Rectangle th)
         {
-            using (Brush fill = new SolidBrush(Color.FromArgb(226, 226, 226))) { g.FillRectangle(fill, th); }
+            using (Brush fill = new SolidBrush(Color.FromArgb(248, 248, 250))) { g.FillRectangle(fill, th); }
             using (Pen hi = new Pen(Color.FromArgb(253, 253, 253)))
             {
                 g.DrawLine(hi, th.X, th.Y, th.Right - 2, th.Y);
