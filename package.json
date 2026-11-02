@@ -1,0 +1,16 @@
+{
+  "name": "eax-license-server",
+  "version": "1.0.0",
+  "private": true,
+  "description": "License/subscription server for EaxReverbEngine - validate, issue and revoke customer keys.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=14"
+  },
+  "dependencies": {
+    "mongodb": "^6.3.0"
+  }
+}
