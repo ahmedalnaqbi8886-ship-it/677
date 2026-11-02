@@ -152,11 +152,11 @@ namespace EaxReverbEngine
                 else
                 {
                     // سلايدر الـ Mixer العمودي - طابقته على لقطة الاصلي الحقيقية بالبكسل:
-                    // قضيب سميك بأطراف مدورة (غامق يسار لفاتح يمين) + مقبض ابيض مستطيل
+                    // قضيب رفيع بأطراف مدورة (غامق يسار لفاتح يمين) + مقبض ابيض مستطيل
                     // زواياه مدورة اعرض... اطول من عرضه يعلو فوق القضيب، بدون اي نقطة زرقاء
-                    // ولا علامة حمراء (هذاك شكل قديم غلط)
-                    Rectangle gv = new Rectangle(cx - 5, top - 5, 10, bot - top + 10);
-                    using (GraphicsPath gp = Skin.Round(gv, 5))
+                    // ولا علامة حمراء (هذاك شكل قديم غلط) - صغّرته لأنه كان اكبر من الاصلي
+                    Rectangle gv = new Rectangle(cx - 3, top - 3, 7, bot - top + 6);
+                    using (GraphicsPath gp = Skin.Round(gv, 3))
                     {
                         if (DarkGroove)
                         {
@@ -175,20 +175,21 @@ namespace EaxReverbEngine
                         }
                         using (Pen p = new Pen(Color.FromArgb(44, 44, 44), 1f)) { g.DrawPath(p, gp); }
                     }
-                    DrawHandleThumbV(g, new Rectangle(cx - 8, ty - 14, 16, 28));
+                    DrawHandleThumbV(g, new Rectangle(cx - 6, ty - 10, 12, 20));
                 }
             }
             else
             {
                 // سلايدر افقي Bass Boost / Bass Management - طابقته على لقطة الاصلي الحقيقية بالبكسل:
-                // قضيب رمادي غامق سميك باطراف مدورة (تدرج غامق فوق لفاتح تحت) + مقبض ابيض
+                // قضيب رمادي غامق رفيع باطراف مدورة (تدرج غامق فوق لفاتح تحت) + مقبض ابيض
                 // مستطيل زواياه مدورة اعرض من طوله يعلو فوق القضيب (مب كبسولة ومب خط رفيع)
+                // صغّرته عن القياس السابق لأنه كان اكبر من حجمه بالاصلي
                 int cy = Height / 2;
                 int left = PadTop;
                 int right = Width - PadBottom;
                 int tx = left + (int)Math.Round((right - left) * f);
 
-                int gh = 10;
+                int gh = 7;
                 Rectangle gv = new Rectangle(left, cy - gh / 2, Math.Max(gh, right - left), gh);
                 using (GraphicsPath gp = Skin.Round(gv, gh / 2))
                 {
@@ -203,7 +204,7 @@ namespace EaxReverbEngine
                     using (Pen edge = new Pen(Color.FromArgb(44, 44, 44), 1f)) { g.DrawPath(edge, gp); }
                 }
 
-                Rectangle th = new Rectangle(tx - 13, cy - 8, 26, 16);
+                Rectangle th = new Rectangle(tx - 10, cy - 6, 20, 12);
                 DrawHandleThumb(g, th);
             }
         }
@@ -258,7 +259,7 @@ namespace EaxReverbEngine
         // خفيف فاتح فوق لأغمق تحت وحدود رمادية غامقة - مطابق للقطة الاصلية بالبكسل
         private static void DrawHandleThumb(Graphics g, Rectangle th)
         {
-            using (GraphicsPath gp = Skin.Round(th, 4))
+            using (GraphicsPath gp = Skin.Round(th, 3))
             {
                 using (LinearGradientBrush b = new LinearGradientBrush(th, Color.White, Color.FromArgb(185, 183, 186), 90f))
                 {
@@ -276,7 +277,7 @@ namespace EaxReverbEngine
         // تدرج افقي (فاتح بالنص لغامق باليمين واليسار) بدل العمودي
         private static void DrawHandleThumbV(Graphics g, Rectangle th)
         {
-            using (GraphicsPath gp = Skin.Round(th, 4))
+            using (GraphicsPath gp = Skin.Round(th, 3))
             {
                 using (LinearGradientBrush b = new LinearGradientBrush(th, Color.FromArgb(226, 226, 228), Color.White, 0f))
                 {
