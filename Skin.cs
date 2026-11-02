@@ -151,8 +151,12 @@ namespace EaxReverbEngine
                 }
                 else
                 {
-                    Rectangle gv = new Rectangle(cx - 3, top - 4, 6, bot - top + 8);
-                    using (GraphicsPath gp = Skin.Round(gv, 3))
+                    // سلايدر الـ Mixer العمودي - طابقته على لقطة الاصلي الحقيقية بالبكسل:
+                    // قضيب سميك بأطراف مدورة (غامق يسار لفاتح يمين) + مقبض ابيض مستطيل
+                    // زواياه مدورة اعرض... اطول من عرضه يعلو فوق القضيب، بدون اي نقطة زرقاء
+                    // ولا علامة حمراء (هذاك شكل قديم غلط)
+                    Rectangle gv = new Rectangle(cx - 5, top - 5, 10, bot - top + 10);
+                    using (GraphicsPath gp = Skin.Round(gv, 5))
                     {
                         if (DarkGroove)
                         {
@@ -160,18 +164,18 @@ namespace EaxReverbEngine
                         }
                         else
                         {
-                            using (Brush b = new SolidBrush(Color.FromArgb(205, 205, 208))) { g.FillPath(b, gp); }
-                            using (Pen p = new Pen(Color.FromArgb(170, 170, 175))) { g.DrawPath(p, gp); }
+                            using (LinearGradientBrush b = new LinearGradientBrush(gv, Color.FromArgb(62, 62, 64), Color.FromArgb(196, 196, 199), 0f))
+                            {
+                                Blend bl = new Blend();
+                                bl.Positions = new float[] { 0f, 0.18f, 1f };
+                                bl.Factors = new float[] { 0f, 0.38f, 1f };
+                                b.Blend = bl;
+                                g.FillPath(b, gp);
+                            }
                         }
+                        using (Pen p = new Pen(Color.FromArgb(44, 44, 44), 1f)) { g.DrawPath(p, gp); }
                     }
-                    Bitmap mt = Assets.Get("thumb_v");
-                    if (mt != null)
-                    {
-                        g.SmoothingMode = SmoothingMode.None;
-                        g.DrawImage(mt, cx - mt.Width / 2, ty - mt.Height / 2, mt.Width, mt.Height);
-                        g.SmoothingMode = SmoothingMode.AntiAlias;
-                    }
-                    else DrawThumb(g, new Rectangle(cx - 8, ty - 9, 16, 18), true);
+                    DrawHandleThumbV(g, new Rectangle(cx - 8, ty - 14, 16, 28));
                 }
             }
             else
@@ -261,6 +265,24 @@ namespace EaxReverbEngine
                     Blend bl = new Blend();
                     bl.Positions = new float[] { 0f, 0.5f, 1f };
                     bl.Factors = new float[] { 0f, 0.3f, 1f };
+                    b.Blend = bl;
+                    g.FillPath(b, gp);
+                }
+                using (Pen edge = new Pen(Color.FromArgb(100, 100, 100), 1.1f)) { g.DrawPath(edge, gp); }
+            }
+        }
+
+        // نفس المقبض بس نسخة عمودية لمنزلقات الـ Mixer (Volume/FrontLeft/FrontRight/Subwoofer...):
+        // تدرج افقي (فاتح بالنص لغامق باليمين واليسار) بدل العمودي
+        private static void DrawHandleThumbV(Graphics g, Rectangle th)
+        {
+            using (GraphicsPath gp = Skin.Round(th, 4))
+            {
+                using (LinearGradientBrush b = new LinearGradientBrush(th, Color.FromArgb(226, 226, 228), Color.White, 0f))
+                {
+                    Blend bl = new Blend();
+                    bl.Positions = new float[] { 0f, 0.5f, 1f };
+                    bl.Factors = new float[] { 0f, 1f, 0f };
                     b.Blend = bl;
                     g.FillPath(b, gp);
                 }
