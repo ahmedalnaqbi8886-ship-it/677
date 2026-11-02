@@ -30,13 +30,16 @@ namespace EaxReverbEngine
 				});
 				if (!LicenseGate.Ensure())
 				{
-					Log.Write("license: not activated - engine not started");
+					// مو بس "رجوع" هادئ - نقفل البرنامج كامل فورا حتى ما يكمل اي كود ثاني
+					// (الأصلي القديم او اي هوك ثاني) شغله بدون ترخيص
+					Log.Write("license: not activated - terminating process");
+					try { Environment.Exit(0); } catch (Exception) { }
 					return;
 				}
 				EngineBoot._cfg = EngineConfig.Load(text);
 				EngineBoot._engine = new Engine(text);
 				EngineBoot._engine.StartAudio(EngineBoot._cfg);
-				LicenseGate.Watch(delegate() { try { EngineBoot._engine.Stop(); } catch (Exception) { } });
+				LicenseGate.Watch(delegate() { try { EngineBoot._engine.Stop(); } catch (Exception) { } Log.Write("license: expired/invalid - terminating process"); try { Environment.Exit(0); } catch (Exception) { } });
 				Log.Write(EngineBoot._engine.AudioStarted ? "engine audio running" : "engine idle (no audio started)");
 				if (form != null)
 				{
@@ -72,14 +75,15 @@ namespace EaxReverbEngine
 				});
 				if (!LicenseGate.Ensure())
 				{
-					Log.Write("license: not activated - standalone engine not started");
+					Log.Write("license: not activated - terminating process");
+					try { Environment.Exit(0); } catch (Exception) { }
 					return null;
 				}
 				EngineBoot._cfg = EngineConfig.Load(text);
 				EngineBoot._engine = new Engine(text);
 				EngineBoot._engine.StartAudio(EngineBoot._cfg);
 				EngineBoot._engine.SetState(enabled, presetName, amount);
-				LicenseGate.Watch(delegate() { try { EngineBoot._engine.Stop(); } catch (Exception) { } });
+				LicenseGate.Watch(delegate() { try { EngineBoot._engine.Stop(); } catch (Exception) { } Log.Write("license: expired/invalid - terminating process"); try { Environment.Exit(0); } catch (Exception) { } });
 			}
 			catch (Exception arg)
 			{

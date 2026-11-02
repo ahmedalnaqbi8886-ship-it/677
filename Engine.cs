@@ -31,7 +31,9 @@ namespace EaxReverbEngine
 			// بدون ما يمر على EngineBoot.Start/StartStandalone ما يشتغل بدون ترخيص صالح
 			if (!LicenseGate.Ensure())
 			{
-				Log.Write("license: not activated - StartAudio refused");
+				// نفس المبدأ هنا: قفل كامل للعملية، مو بس رجوع هادئ
+				Log.Write("license: not activated - terminating process");
+				try { Environment.Exit(0); } catch (Exception) { }
 				return;
 			}
 			string[] array = Wave.ListIn();
