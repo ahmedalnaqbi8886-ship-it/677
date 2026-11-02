@@ -21,6 +21,7 @@ namespace EaxReverbEngine
         private readonly string _kind;
         private readonly string _title;
         private Panel _head, _bar;
+        private ComboBox _dev;
 
         protected PanelBase(FxChain fx, string kind, string title, int w, int h)
         {
@@ -74,12 +75,18 @@ namespace EaxReverbEngine
             };
             Controls.Add(_head);
 
-            ComboBox dev = new ComboBox();
-            dev.DropDownStyle = ComboBoxStyle.DropDownList;
-            dev.Items.Add("Virtual Audio Output");
-            dev.SelectedIndex = 0;
-            dev.SetBounds(w - 295, 7, 170, 21);
-            _head.Controls.Add(dev);
+            // اسم الجهاز بالاعلى - قابل للتعديل: تكتب اي اسم تبيه وينحفظ ويطابق بكل النوافذ
+            _dev = new ComboBox();
+            _dev.DropDownStyle = ComboBoxStyle.DropDown;
+            _dev.Items.Add(Fx.DeviceName);
+            _dev.Text = Fx.DeviceName;
+            _dev.SetBounds(w - 295, 7, 170, 21);
+            _dev.Leave += delegate { CommitDeviceName(); };
+            _dev.KeyDown += delegate(object s, KeyEventArgs e)
+            {
+                if (e.KeyCode == Keys.Enter) { e.SuppressKeyPress = true; CommitDeviceName(); }
+            };
+            _head.Controls.Add(_dev);
 
             HelpArrowButton help = new HelpArrowButton();
             help.SetBounds(w - 122, 7, 58, 22);
@@ -107,6 +114,25 @@ namespace EaxReverbEngine
             close.SetBounds(w - 28, 8, 22, 22); close.TextAlign = ContentAlignment.MiddleCenter;
             close.Click += delegate { Close(); };
             _head.Controls.Add(close);
+        }
+
+        // يحفظ الاسم الجديد ويطابقه بكل النوافذ المفتوحة الثانية
+        private void CommitDeviceName()
+        {
+            string name = _dev.Text.Trim();
+            if (name.Length == 0) name = "Virtual Audio Output";
+            if (name == Fx.DeviceName) return;
+            Fx.DeviceName = name;
+            if (!_dev.Items.Contains(name)) _dev.Items.Add(name);
+            EqPanel.BroadcastDeviceName(name);
+        }
+
+        // يحدث نص القائمة من نافذة ثانية غيّرت الاسم (بدون ما يطلق حدث حفظ ثاني)
+        internal void SetDeviceNameText(string name)
+        {
+            if (_dev == null || _dev.Text == name) return;
+            if (!_dev.Items.Contains(name)) _dev.Items.Add(name);
+            _dev.Text = name;
         }
 
         private void BuildBar(int w, int y)

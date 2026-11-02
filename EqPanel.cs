@@ -56,6 +56,15 @@ namespace EaxReverbEngine
             return w;
         }
 
+        // يطابق اسم الجهاز الجديد بكل النوافذ المفتوحة حاليًا (غير اللي المستخدم كاتب فيها)
+        internal static void BroadcastDeviceName(string name)
+        {
+            foreach (PanelBase w in Wins.Values)
+            {
+                try { if (!w.IsDisposed) w.SetDeviceNameText(name); } catch (Exception) { }
+            }
+        }
+
         public static void Shutdown()
         {
             _closing = true;

@@ -35,6 +35,7 @@ namespace EaxReverbEngine
         private bool _eaxOn;
         private int _eaxAmount;
         private string _eaxPreset = "Auditorium";
+        private string _deviceName = "Virtual Audio Output";
         private float _fs = 48000f;
         private float _lpA;
         private float _gL = 1f, _gR = 1f;
@@ -91,6 +92,9 @@ namespace EaxReverbEngine
         public bool EaxOn { get { lock (_lock) { return _eaxOn; } } set { lock (_lock) { _eaxOn = value; } } }
         public int EaxAmount { get { lock (_lock) { return _eaxAmount; } } set { lock (_lock) { int v = value; _eaxAmount = v < 0 ? 0 : (v > 100 ? 100 : v); } } }
         public string EaxPreset { get { lock (_lock) { return _eaxPreset; } } set { lock (_lock) { _eaxPreset = string.IsNullOrEmpty(value) ? _eaxPreset : value; } } }
+
+        // الاسم الظاهر بقائمة الجهاز اعلى كل نافذة (قابل للتعديل من المستخدم) - نفس الاسم بكل النوافذ
+        public string DeviceName { get { lock (_lock) { return _deviceName; } } set { lock (_lock) { _deviceName = value ?? ""; } } }
 
         public void ResetEq()
         {
@@ -368,6 +372,7 @@ namespace EaxReverbEngine
                 L.Add("EaxOn=" + (_eaxOn ? "1" : "0"));
                 L.Add("EaxAmount=" + _eaxAmount);
                 L.Add("EaxPreset=" + _eaxPreset.Replace("\r", "").Replace("\n", ""));
+                L.Add("DeviceName=" + _deviceName.Replace("\r", "").Replace("\n", ""));
                 File.WriteAllLines(Path.Combine(dir, "fx.ini"), L.ToArray());
             }
         }
@@ -383,6 +388,7 @@ namespace EaxReverbEngine
                 string k = line.Substring(0, eq).Trim();
                 string raw = line.Substring(eq + 1).Trim();
                 if (k == "EaxPreset") { EaxPreset = raw; continue; }
+                if (k == "DeviceName") { DeviceName = raw; continue; }
                 float v;
                 if (!float.TryParse(raw, NumberStyles.Float, CultureInfo.InvariantCulture, out v)) continue;
                 if (k.StartsWith("Band"))
