@@ -141,13 +141,6 @@ namespace EaxReverbEngine
                 tt.SetToolTip(nb, tips[i]);
                 _bar.Controls.Add(nb);
             }
-
-            SkinButton skin = new SkinButton();
-            skin.Text = "Skin...";
-            skin.SetBounds(w - 86, 3, 70, 24);
-            skin.Click += delegate { new SkinWindow().Show(); };
-            tt.SetToolTip(skin, "Choose your own images for the EQ, sliders, buttons...");
-            _bar.Controls.Add(skin);
         }
 
         protected BarIcon AddToggle(string kind, string tip, int x)

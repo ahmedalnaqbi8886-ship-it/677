@@ -542,7 +542,7 @@ namespace EaxReverbEngine
         }
     }
 
-    // صورة غرفة الاختبار (سماعة راس او سماعتين)
+    // مربع اختبار السماعة: بطاقة مسطحة بسيطة + ايقونة سماعة/سماعتين (بدون غرفة ثلاثية الابعاد)
     internal sealed class RoomPic : Control
     {
         private bool _head = true;
@@ -557,78 +557,49 @@ namespace EaxReverbEngine
         {
             Graphics g = e.Graphics;
             g.SmoothingMode = SmoothingMode.AntiAlias;
-            Rectangle r = new Rectangle(0, 0, Width, Height);
-            using (LinearGradientBrush b = new LinearGradientBrush(r, Color.FromArgb(156, 150, 132), Color.FromArgb(255, 245, 190), 90f))
-            { g.FillRectangle(b, r); }
-            using (Brush b = new SolidBrush(Color.FromArgb(90, 60, 50, 40)))
-            { g.FillPolygon(b, new PointF[] { new PointF(0, 0), new PointF(34, 24), new PointF(34, Height - 24), new PointF(0, Height) }); }
-            using (Brush b = new SolidBrush(Color.FromArgb(90, 60, 50, 40)))
-            { g.FillPolygon(b, new PointF[] { new PointF(Width, 0), new PointF(Width - 34, 24), new PointF(Width - 34, Height - 24), new PointF(Width, Height) }); }
-            using (Brush b = new SolidBrush(Color.FromArgb(70, 120, 110, 100)))
-            { g.FillRectangle(b, Width / 2 - 40, 6, 80, 12); }
-            // ظل ارضي ناعم تحت الجسم يعطي احساس عمق
-            using (Brush shb = new SolidBrush(Color.FromArgb(60, 40, 30, 10)))
-            { g.FillEllipse(shb, Width / 2 - 56, Height - 20, 112, 14); }
-
-            if (_head)
+            Rectangle r = new Rectangle(0, 0, Width - 1, Height - 1);
+            using (GraphicsPath gp = Skin.Round(r, 8))
             {
-                using (Pen band = new Pen(Color.FromArgb(25, 25, 28), 5f))
-                { g.DrawArc(band, Width / 2 - 38, 36, 76, 80, 180, 180); }
-                Ear(g, Width / 2 - 37, 93);
-                Ear(g, Width / 2 + 37, 93);
+                using (LinearGradientBrush b = new LinearGradientBrush(r, Color.White, Color.FromArgb(226, 226, 230), 90f))
+                { g.FillPath(b, gp); }
+                using (Pen p = new Pen(Color.FromArgb(180, 180, 186))) { g.DrawPath(p, gp); }
             }
+
+            Color fg = Color.FromArgb(35, 38, 46);
+            if (_head) DrawHeadphone(g, Width / 2f, Height / 2f + 4f, fg);
             else
             {
-                Woofer(g, Width / 2 - 46, 80);
-                Woofer(g, Width / 2 + 46, 80);
+                DrawSpeaker(g, Width / 2f - 46f, Height / 2f + 4f, fg);
+                DrawSpeaker(g, Width / 2f + 46f, Height / 2f + 4f, fg);
             }
         }
 
-        private static void Ear(Graphics g, float cx, float cy)
+        private static void DrawHeadphone(Graphics g, float cx, float cy, Color fg)
         {
-            Rectangle r = new Rectangle((int)cx - 11, (int)cy - 17, 22, 34);
-            using (GraphicsPath gp = new GraphicsPath())
-            {
-                gp.AddEllipse(r);
-                using (PathGradientBrush pg = new PathGradientBrush(gp))
-                {
-                    pg.CenterPoint = new PointF(cx - 4, cy - 6);
-                    pg.CenterColor = Color.FromArgb(90, 92, 98);
-                    pg.SurroundColors = new Color[] { Color.FromArgb(14, 14, 17) };
-                    g.FillEllipse(new SolidBrush(Color.FromArgb(14, 14, 17)), r);
-                    g.FillPath(pg, gp);
-                }
-            }
+            using (Pen band = new Pen(fg, 4.5f)) { g.DrawArc(band, cx - 34f, cy - 44f, 68f, 60f, 180, 180); }
+            Ear(g, cx - 34f, cy + 10f, fg);
+            Ear(g, cx + 34f, cy + 10f, fg);
+        }
+
+        private static void Ear(Graphics g, float cx, float cy, Color fg)
+        {
+            Rectangle r = new Rectangle((int)cx - 9, (int)cy - 14, 18, 28);
+            using (GraphicsPath gp = Skin.Round(r, 8))
+            using (Brush b = new SolidBrush(fg)) { g.FillPath(b, gp); }
             using (Brush hi = new SolidBrush(Color.FromArgb(70, 255, 255, 255)))
-            { g.FillEllipse(hi, cx - 7, cy - 12, 7, 10); }
+            { g.FillEllipse(hi, cx - 5f, cy - 9f, 5f, 8f); }
         }
 
-        private static void Woofer(Graphics g, float cx, float cy)
+        private static void DrawSpeaker(Graphics g, float cx, float cy, Color fg)
         {
-            using (Brush cab = new SolidBrush(Color.FromArgb(26, 26, 30)))
-            { g.FillRectangle(cab, cx - 20, cy - 32, 40, 64); }
-            using (LinearGradientBrush top = new LinearGradientBrush(new Rectangle((int)cx - 20, (int)cy - 32, 40, 64), Color.FromArgb(70, 255, 255, 255), Color.FromArgb(0, 0, 0, 0), 20f))
-            { g.FillRectangle(top, cx - 20, cy - 32, 40, 20); }
-            ConeRing(g, cx, cy + 8, 14f);
-            ConeRing(g, cx, cy - 16, 7f);
-        }
-
-        private static void ConeRing(Graphics g, float cx, float cy, float rad)
-        {
-            Rectangle r = new Rectangle((int)(cx - rad), (int)(cy - rad), (int)(rad * 2), (int)(rad * 2));
-            using (GraphicsPath gp = new GraphicsPath())
+            Rectangle r = new Rectangle((int)cx - 16, (int)cy - 32, 32, 64);
+            using (GraphicsPath gp = Skin.Round(r, 5))
+            using (Brush b = new SolidBrush(fg)) { g.FillPath(b, gp); }
+            using (Pen p = new Pen(Color.White, 1.3f))
             {
-                gp.AddEllipse(r);
-                using (PathGradientBrush pg = new PathGradientBrush(gp))
-                {
-                    pg.CenterPoint = new PointF(cx - rad * 0.35f, cy - rad * 0.35f);
-                    pg.CenterColor = Color.FromArgb(120, 122, 128);
-                    pg.SurroundColors = new Color[] { Color.FromArgb(55, 55, 60) };
-                    g.FillPath(pg, gp);
-                }
+                g.DrawEllipse(p, cx - 10f, cy - 10f, 20f, 20f);
+                g.DrawEllipse(p, cx - 5f, cy - 24f, 10f, 10f);
             }
-            using (Pen edge = new Pen(Color.FromArgb(15, 15, 18), 1.4f)) { g.DrawEllipse(edge, r); }
-            using (Brush dot = new SolidBrush(Color.FromArgb(18, 18, 20))) { g.FillEllipse(dot, cx - rad * 0.22f, cy - rad * 0.22f, rad * 0.44f, rad * 0.44f); }
         }
     }
 
