@@ -51,6 +51,8 @@ namespace EaxReverbEngine
             _amt = HBar(g, 350, 30, 108, 0, 100);
             Cap(g, "100", 460, 36, 26, ContentAlignment.MiddleLeft);
 
+            AddToggle("badge", "EAX Advanced HD", 214);
+
             // ---- احداث ----
             _on.CheckedChanged += delegate { if (!Loading) { Fx.EaxOn = _on.Checked; Apply(); } };
             _list.SelectedIndexChanged += delegate
