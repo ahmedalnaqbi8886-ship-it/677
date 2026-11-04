@@ -173,6 +173,16 @@ namespace EaxReverbEngine
                 tt.SetToolTip(nb, tips[i]);
                 _bar.Controls.Add(nb);
             }
+
+            // زر فتح EAX Settings - بالنافذة الرئيسية (Graphic Equalizer) بس
+            if (_kind == "eq")
+            {
+                BarIcon eaxBtn = new BarIcon("eax");
+                eaxBtn.Location = new Point(118 + kinds.Length * 32, 1);
+                eaxBtn.Click += delegate { EqPanel.OpenFrom("eax", this); };
+                tt.SetToolTip(eaxBtn, "EAX Settings");
+                _bar.Controls.Add(eaxBtn);
+            }
         }
 
         protected BarIcon AddToggle(string kind, string tip, int x)

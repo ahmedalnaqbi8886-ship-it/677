@@ -450,6 +450,7 @@ namespace EaxReverbEngine
                 case "speaker": return "ic_woof";
                 case "mixer": return "ic_caps";
                 case "badge": return "ic_fx";
+                case "eax": return "ic_fx";
                 default: return null;
             }
         }
