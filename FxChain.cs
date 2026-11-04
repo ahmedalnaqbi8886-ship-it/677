@@ -35,8 +35,6 @@ namespace EaxReverbEngine
         private bool _eaxOn;
         private int _eaxAmount;
         private string _eaxPreset = "Auditorium";
-        private bool _cmssOn;
-        private int _cmssWidening = 50;
         private string _deviceName = "Virtual Audio Output";
         private float _fs = 48000f;
         private float _lpA;
@@ -94,8 +92,6 @@ namespace EaxReverbEngine
         public bool EaxOn { get { lock (_lock) { return _eaxOn; } } set { lock (_lock) { _eaxOn = value; } } }
         public int EaxAmount { get { lock (_lock) { return _eaxAmount; } } set { lock (_lock) { int v = value; _eaxAmount = v < 0 ? 0 : (v > 100 ? 100 : v); } } }
         public string EaxPreset { get { lock (_lock) { return _eaxPreset; } } set { lock (_lock) { _eaxPreset = string.IsNullOrEmpty(value) ? _eaxPreset : value; } } }
-        public bool CmssOn { get { lock (_lock) { return _cmssOn; } } set { lock (_lock) { _cmssOn = value; } } }
-        public int CmssWidening { get { lock (_lock) { return _cmssWidening; } } set { lock (_lock) { int v = value; _cmssWidening = v < 0 ? 0 : (v > 100 ? 100 : v); } } }
 
         // الاسم الظاهر بقائمة الجهاز اعلى كل نافذة (قابل للتعديل من المستخدم) - نفس الاسم بكل النوافذ
         public string DeviceName { get { lock (_lock) { return _deviceName; } } set { lock (_lock) { _deviceName = value ?? ""; } } }
@@ -376,8 +372,6 @@ namespace EaxReverbEngine
                 L.Add("EaxOn=" + (_eaxOn ? "1" : "0"));
                 L.Add("EaxAmount=" + _eaxAmount);
                 L.Add("EaxPreset=" + _eaxPreset.Replace("\r", "").Replace("\n", ""));
-                L.Add("CmssOn=" + (_cmssOn ? "1" : "0"));
-                L.Add("CmssWidening=" + _cmssWidening);
                 L.Add("DeviceName=" + _deviceName.Replace("\r", "").Replace("\n", ""));
                 File.WriteAllLines(Path.Combine(dir, "fx.ini"), L.ToArray());
             }
@@ -422,8 +416,6 @@ namespace EaxReverbEngine
                 else if (k == "SpkMode") SpeakerMode = (int)v;
                 else if (k == "EaxOn") EaxOn = v != 0f;
                 else if (k == "EaxAmount") EaxAmount = (int)v;
-                else if (k == "CmssOn") CmssOn = v != 0f;
-                else if (k == "CmssWidening") CmssWidening = (int)v;
             }
         }
     }

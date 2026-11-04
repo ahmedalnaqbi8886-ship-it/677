@@ -66,8 +66,16 @@ namespace EaxReverbEngine
                 string an = _kind == "speaker" ? "hdr_spk" : (_kind == "mixer" ? "hdr_mix" : (_kind == "eax" ? "hdr_fx" : "hdr_eq"));
                 Bitmap ic = Assets.Get(an);
                 if (ic != null) g.DrawImage(ic, 13, 4, ic.Width, ic.Height);
+                string ttl = _title;
+                int tx = 46;
+                if (_kind == "eax")
+                {
+                    // شعار hdr_fx عريض وفيه كلمة EAX بنفسه، فما نكررها بالنص
+                    if (ic != null) tx = 13 + ic.Width + 10;
+                    if (ttl.StartsWith("EAX ")) ttl = ttl.Substring(4);
+                }
                 using (Font f = new Font("Tahoma", 10f, FontStyle.Bold))
-                { TextRenderer.DrawText(g, _title, f, new Point(46, 9), Color.Black); }
+                { TextRenderer.DrawText(g, ttl, f, new Point(tx, 9), Color.Black); }
             };
             _head.MouseDown += delegate(object s, MouseEventArgs e)
             {
@@ -160,9 +168,23 @@ namespace EaxReverbEngine
             def.Click += delegate { DoDefault(); Reload(); };
             _bar.Controls.Add(def);
 
+            ToolTip tt = new ToolTip();
+
+            if (_kind == "eax")
+            {
+                // نافذة EAX الاصلية: ايقونتين زينة بس بالشريط السفلي، بدون تنقل بين النوافذ
+                string[] deco = new string[] { "speaker", "mixer" };
+                for (int i = 0; i < deco.Length; i++)
+                {
+                    BarIcon nb = new BarIcon(deco[i]);
+                    nb.Location = new Point(118 + i * 32, 1);
+                    _bar.Controls.Add(nb);
+                }
+                return;
+            }
+
             string[] kinds = new string[] { "eq", "speaker", "mixer" };
             string[] tips = new string[] { "Equalizer", "Speaker Settings", "Surround Mixer" };
-            ToolTip tt = new ToolTip();
             for (int i = 0; i < kinds.Length; i++)
             {
                 string k = kinds[i];
