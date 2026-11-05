@@ -4,7 +4,7 @@ using System.Windows.Forms;
 
 namespace EaxReverbEngine
 {
-    // EAX Settings: المؤثرات الصوتية + البيئة الصوتية (مطابقة للنافذة الاصلية)
+    // EAX Settings: شاشة وحدة (زي الاصلي بالضبط) - Effects + CMSS 3D مضافة بنفس الشاشة، بدون تبويبات
     internal sealed class EaxWindow : PanelBase
     {
         // الاسماء المؤكدة من لقطة الاصلي (Active Preset list) - مرتبة ابجديًا زي الاصلي
@@ -18,8 +18,12 @@ namespace EaxReverbEngine
         private Label _presetVal, _amtVal;
         private CSlider _amt;
 
-        public EaxWindow(FxChain fx) : base(fx, "eax", "EAX Settings", 500, 260)
+        private CheckBox _cmssOn;
+        private CSlider _widen;
+
+        public EaxWindow(FxChain fx) : base(fx, "eax", "EAX Settings", 500, 316)
         {
+            // ---- نفس شاشة الاصلي بالضبط: Effects ----
             Label desc = new Label();
             desc.Text = "Audio Effects are high quality music enhancement effects created by the powerful audio engine in your sound device.";
             desc.SetBounds(10, 6, 480, 34);
@@ -51,6 +55,22 @@ namespace EaxReverbEngine
             _amt = HBar(g, 350, 30, 108, 0, 100);
             Cap(g, "100", 460, 36, 26, ContentAlignment.MiddleLeft);
 
+            // ---- CMSS 3D مضافة بنفس الشاشة (مو تبويب جديد) ----
+            Panel g2 = Group(Body, "", 6, 236, 488, 72);
+
+            _cmssOn = new CheckBox();
+            _cmssOn.Text = "Enable CMSS 3D Surround";
+            _cmssOn.AutoSize = true;
+            _cmssOn.BackColor = Color.Transparent;
+            _cmssOn.Location = new Point(8, 6);
+            g2.Controls.Add(_cmssOn);
+
+            Cap(g2, "Stereo Widening", 10, 36, 112, ContentAlignment.MiddleLeft);
+            Cap(g2, "Low", 128, 36, 30, ContentAlignment.MiddleCenter);
+            _widen = HBar(g2, 162, 32, 254, 0, 100);
+            Cap(g2, "High", 422, 36, 34, ContentAlignment.MiddleCenter);
+            _widen.Value = 50;
+
             // ---- احداث ----
             _on.CheckedChanged += delegate { if (!Loading) { Fx.EaxOn = _on.Checked; Apply(); } };
             _list.SelectedIndexChanged += delegate
@@ -67,6 +87,8 @@ namespace EaxReverbEngine
                 _amtVal.Text = "Effects Amount : " + _amt.Value;
                 if (!Loading) { Fx.EaxAmount = _amt.Value; Apply(); }
             };
+            _cmssOn.CheckedChanged += delegate { if (!Loading) Fx.CmssOn = _cmssOn.Checked; };
+            _widen.ValueChanged += delegate { if (!Loading) Fx.CmssWidening = _widen.Value; };
 
             Reload();
         }
@@ -81,6 +103,8 @@ namespace EaxReverbEngine
             Fx.EaxOn = false;
             Fx.EaxAmount = 0;
             Fx.EaxPreset = Presets[0];
+            Fx.CmssOn = false;
+            Fx.CmssWidening = 50;
         }
 
         public override void Reload()
@@ -96,6 +120,9 @@ namespace EaxReverbEngine
                 _presetVal.Text = Presets[idx];
                 _amt.Value = Fx.EaxAmount;
                 _amtVal.Text = "Effects Amount : " + Fx.EaxAmount;
+
+                _cmssOn.Checked = Fx.CmssOn;
+                _widen.Value = Fx.CmssWidening;
             }
             finally { Loading = was; }
             Apply();
