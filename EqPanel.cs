@@ -10,13 +10,29 @@ namespace EaxReverbEngine
     {
         private static FxChain _fx;
         private static readonly Dictionary<string, PanelBase> Wins = new Dictionary<string, PanelBase>();
+        private static LauncherBar _bar;
         private static bool _closing;
 
         public static bool Closing { get { return _closing; } }
 
         public static void ShowFor(Engine engine)
         {
-            Open(engine.Fx, "eq");
+            PanelBase eq = Open(engine.Fx, "eq");
+            ShowBar(engine.Fx, eq);
+        }
+
+        private static void ShowBar(FxChain fx, PanelBase near)
+        {
+            if (_bar == null || _bar.IsDisposed) _bar = new LauncherBar(fx);
+            if (near != null)
+            {
+                int bx = near.Location.X;
+                int by = near.Location.Y - _bar.Height;
+                if (by < 0) by = near.Location.Y;
+                _bar.Location = new Point(bx, by);
+            }
+            _bar.Show();
+            _bar.BringToFront();
         }
 
         internal static void Open(string kind)
@@ -73,6 +89,8 @@ namespace EaxReverbEngine
                 try { if (!w.IsDisposed) w.Close(); } catch (Exception) { }
             }
             Wins.Clear();
+            try { if (_bar != null && !_bar.IsDisposed) _bar.Close(); } catch (Exception) { }
+            _bar = null;
         }
     }
 }
