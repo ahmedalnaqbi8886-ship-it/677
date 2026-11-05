@@ -322,6 +322,12 @@ namespace EaxReverbEngine
 					{
 						EqPanel.ShowFor(eng);
 					}
+					else
+					{
+						// الهوك نجح (الحالة المعتادة) - افتح شريط MediaSource لحاله فورًا
+						// كتطبيق منفصل مربوط بالمحرك، بدون انتظار ضغطة المستخدم على زر Equalizer
+						EqPanel.ShowBarStandalone(eng);
+					}
 				};
 				Control c = form as Control;
 				if (c != null && c.InvokeRequired)
