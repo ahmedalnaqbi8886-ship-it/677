@@ -12,47 +12,56 @@ namespace EaxReverbEngine
         [DllImport("user32.dll")] private static extern bool ReleaseCapture();
         [DllImport("user32.dll")] private static extern IntPtr SendMessage(IntPtr h, int msg, IntPtr w, IntPtr l);
 
+        private const int BarH = 48;
+
         private readonly FxChain _fx;
+        private Panel _top;
+        private Panel _bottom;
         private Panel _iconRow;
         private bool _collapsed;
+        private int _collapsedWidth;
+        private int _expandedWidth;
 
         public LauncherBar(FxChain fx)
         {
             _fx = fx;
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.Manual;
-            ClientSize = new Size(662, 54);
             BackColor = Color.White;
             Cursor = BlueCursor.Arrow;
             BlueCursor.Apply(this);
             BlueCursor.Pin(this);
 
-            Panel top = new Panel();
-            top.SetBounds(0, 0, ClientSize.Width, 48);
-            top.Paint += delegate(object s, PaintEventArgs e)
+            // عرض مبدئي مؤقت - يتعدل تلقائيًا بالاخير حسب حجم الصور الحقيقي (يمنع أي تداخل/قص)
+            int tempW = 900;
+
+            _top = new Panel();
+            _top.SetBounds(0, 0, tempW, BarH);
+            _top.Paint += delegate(object s, PaintEventArgs e)
             {
-                Rectangle r = new Rectangle(0, 0, top.Width, top.Height);
+                Rectangle r = new Rectangle(0, 0, _top.Width, _top.Height);
                 using (LinearGradientBrush b = new LinearGradientBrush(r, Color.FromArgb(252, 252, 253), Color.FromArgb(200, 201, 206), 90f))
                 { e.Graphics.FillRectangle(b, r); }
             };
-            top.MouseDown += delegate(object s, MouseEventArgs e)
+            _top.MouseDown += delegate(object s, MouseEventArgs e)
             { if (e.Button == MouseButtons.Left) { ReleaseCapture(); SendMessage(Handle, 0xA1, (IntPtr)2, IntPtr.Zero); } };
-            Controls.Add(top);
+            Controls.Add(_top);
 
-            Panel bottom = new Panel();
-            bottom.SetBounds(0, 48, ClientSize.Width, 6);
-            bottom.BackColor = Color.FromArgb(40, 42, 48);
-            Controls.Add(bottom);
+            _bottom = new Panel();
+            _bottom.SetBounds(0, BarH, tempW, 6);
+            _bottom.BackColor = Color.FromArgb(40, 42, 48);
+            Controls.Add(_bottom);
 
-            Img(top, "ms_green", 3, 1, "فتح Graphic Equalizer", delegate { Open("eq"); });
-            Img(top, "ms_logo", 40, 0, null, null);
-            ImgBtn(top, "ms_go", 132, 7, "فتح Graphic Equalizer", delegate { Open("eq"); });
-            ImgBtn(top, "ms_arrow", 182, 7, "طي/عرض الأيقونات", delegate { ToggleCollapse(); });
+            int gx = Img(_top, "ms_green", 3, 3, "فتح Graphic Equalizer", delegate { Open("eq"); });
+            int lx = Img(_top, "ms_logo", gx + 4, 6, null, null);
+            int goX = Img(_top, "ms_go", lx + 12, 7, "فتح Graphic Equalizer", delegate { Open("eq"); });
+            int arrX = Img(_top, "ms_arrow", goX + 8, 7, "طي/عرض الأيقونات", delegate { ToggleCollapse(); });
 
+            int iconRowStart = arrX + 14;
             _iconRow = new Panel();
-            _iconRow.SetBounds(216, 0, ClientSize.Width - 216, 48);
+            _iconRow.SetBounds(iconRowStart, 0, 500, BarH);
             _iconRow.BackColor = Color.Transparent;
-            top.Controls.Add(_iconRow);
+            _top.Controls.Add(_iconRow);
 
             int x = 0;
             x = Img(_iconRow, "ms_wand", x, 0, null, null) + 1;
@@ -66,8 +75,19 @@ namespace EaxReverbEngine
             x = Img(_iconRow, "ms_rec", x, 0, null, null) + 1;
             x = Img(_iconRow, "ms_swirlnote", x, 0, null, null) + 1;
             x = Img(_iconRow, "ms_play2", x, 0, null, null) + 1;
+            _iconRow.Width = x;
 
-            ImgBtn(top, "ms_x", ClientSize.Width - 42, 3, "إغلاق الشريط", delegate { Close(); });
+            Bitmap xb = Assets.Get("ms_x");
+            int closeW = xb != null ? xb.Width : 30;
+
+            _collapsedWidth = iconRowStart + 16;
+            _expandedWidth = iconRowStart + x + 16 + closeW + 12;
+
+            ClientSize = new Size(_expandedWidth, BarH + 6);
+            _top.Width = _expandedWidth;
+            _bottom.Width = _expandedWidth;
+
+            Img(_top, "ms_x", _expandedWidth - closeW - 10, 3, "إغلاق الشريط", delegate { Close(); });
         }
 
         private void Open(string kind)
@@ -79,7 +99,10 @@ namespace EaxReverbEngine
         {
             _collapsed = !_collapsed;
             _iconRow.Visible = !_collapsed;
-            ClientSize = new Size(_collapsed ? 220 : 662, ClientSize.Height);
+            int w = _collapsed ? _collapsedWidth : _expandedWidth;
+            ClientSize = new Size(w, ClientSize.Height);
+            _top.Width = w;
+            _bottom.Width = w;
         }
 
         // يحط صورة مباشرة (بدون اطار زر) - يرجع نهاية x
