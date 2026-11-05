@@ -18,21 +18,30 @@ namespace EaxReverbEngine
         public static void ShowFor(Engine engine)
         {
             PanelBase eq = Open(engine.Fx, "eq");
-            ShowBar(engine.Fx, eq);
+            try { ShowBar(engine.Fx, eq); }
+            catch (Exception ex) { Log.Write("mediasource bar: " + ex); }
         }
 
         private static void ShowBar(FxChain fx, PanelBase near)
         {
             if (_bar == null || _bar.IsDisposed) _bar = new LauncherBar(fx);
+            int bx = 60, by = 60;
             if (near != null)
             {
-                int bx = near.Location.X;
-                int by = near.Location.Y - _bar.Height;
-                if (by < 0) by = near.Location.Y;
-                _bar.Location = new Point(bx, by);
+                bx = near.Location.X;
+                by = near.Location.Y - _bar.Height - 2;
+                if (by < 0) by = near.Location.Y + near.Height + 2;
+                if (by < 0) by = 60;
             }
+            _bar.StartPosition = FormStartPosition.Manual;
+            _bar.Location = new Point(bx, by);
             _bar.Show();
+            _bar.WindowState = FormWindowState.Normal;
+            _bar.TopMost = true;
             _bar.BringToFront();
+            _bar.Activate();
+            _bar.TopMost = false;
+            Log.Write("mediasource bar: shown at " + bx + "," + by + " visible=" + _bar.Visible);
         }
 
         internal static void Open(string kind)
