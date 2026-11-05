@@ -22,6 +22,13 @@ namespace EaxReverbEngine
         private int _collapsedWidth;
         private int _expandedWidth;
 
+        // اخفاء تلقائي زي شريط المهام: يختفي الا شوي من فوق، ولما الماوس يلمس اعلى الشاشة يطلع كامل
+        private Timer _hoverTimer;
+        private bool _revealed = true;
+        private int _barX;
+        private int _hiddenY;
+        private const int PeekPx = 2;
+
         public LauncherBar(FxChain fx)
         {
             _fx = fx;
@@ -88,6 +95,42 @@ namespace EaxReverbEngine
             _bottom.Width = _expandedWidth;
 
             Img(_top, "ms_x", _expandedWidth - closeW - 10, 3, "إغلاق الشريط", delegate { Close(); });
+
+            TopMost = true;
+            _hiddenY = -(ClientSize.Height - PeekPx);
+            _hoverTimer = new Timer();
+            _hoverTimer.Interval = 120;
+            _hoverTimer.Tick += delegate { PollAutoHide(); };
+            _hoverTimer.Start();
+        }
+
+        // يحط الشريط بمكانه الافقي (X) مرة وحدة - الارتفاع (Y) يتحكم فيه الاخفاء التلقائي بعدين
+        public void PlaceAt(int x)
+        {
+            _barX = x;
+            Location = new Point(_barX, _revealed ? 0 : _hiddenY);
+        }
+
+        private void PollAutoHide()
+        {
+            try
+            {
+                Point p = Cursor.Position;
+                bool nearTop = p.Y <= 4;
+                bool overBar = Bounds.Contains(p);
+                if (!_revealed && (nearTop || overBar))
+                {
+                    _revealed = true;
+                    Location = new Point(_barX, 0);
+                    TopMost = true;
+                }
+                else if (_revealed && !overBar && p.Y > (Bottom + 60))
+                {
+                    _revealed = false;
+                    Location = new Point(_barX, _hiddenY);
+                }
+            }
+            catch (Exception) { }
         }
 
         private void Open(string kind)
@@ -134,6 +177,7 @@ namespace EaxReverbEngine
                 Hide();
                 return;
             }
+            try { if (_hoverTimer != null) { _hoverTimer.Stop(); _hoverTimer.Dispose(); _hoverTimer = null; } } catch (Exception) { }
             base.OnFormClosing(e);
         }
     }

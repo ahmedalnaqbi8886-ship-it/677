@@ -23,58 +23,41 @@ namespace EaxReverbEngine
         }
 
         // يعرض شريط MediaSource لحاله فقط - بدون فتح نافذة Equalizer - يستخدم وقت تشغيل البرنامج
-        // عشان الشريط يطلع كتطبيق منفصل مربوط بالمحرك، فوق نافذة الهوست تمامًا (مو عايم بمكان عشوائي)
+        // الشريط نفسه يتحكم بارتفاعه (اختفاء/ظهور تلقائي فوق الشاشة) - هنا بس نحدد له موقعه الافقي
         public static void ShowBarStandalone(Engine engine, Control host)
         {
             _fx = engine.Fx;
             _closing = false;
             try
             {
-                if (_bar == null || _bar.IsDisposed) _bar = new LauncherBar(engine.Fx);
-                Point topLeft = new Point(60, 60);
+                int bx = 60;
                 if (host != null)
                 {
-                    try
-                    {
-                        Point hostScreen = host.PointToScreen(Point.Empty);
-                        topLeft = new Point(hostScreen.X, hostScreen.Y - _bar.Height - 2);
-                        if (topLeft.Y < 0) topLeft = new Point(hostScreen.X, hostScreen.Y);
-                    }
-                    catch (Exception) { topLeft = new Point(60, 60); }
+                    try { bx = host.PointToScreen(Point.Empty).X; }
+                    catch (Exception) { bx = 60; }
                 }
-                _bar.StartPosition = FormStartPosition.Manual;
-                _bar.Location = topLeft;
-                _bar.Show();
-                _bar.WindowState = FormWindowState.Normal;
-                _bar.TopMost = true;
-                _bar.BringToFront();
-                _bar.Activate();
-                _bar.TopMost = false;
-                Log.Write("mediasource bar: standalone shown at " + topLeft.X + "," + topLeft.Y);
+                ShowBarAt(engine.Fx, bx);
             }
             catch (Exception ex) { Log.Write("mediasource bar: " + ex); }
         }
 
         private static void ShowBar(FxChain fx, PanelBase near)
         {
+            int bx = 60;
+            if (near != null) bx = near.Location.X;
+            ShowBarAt(fx, bx);
+        }
+
+        private static void ShowBarAt(FxChain fx, int bx)
+        {
             if (_bar == null || _bar.IsDisposed) _bar = new LauncherBar(fx);
-            int bx = 60, by = 60;
-            if (near != null)
-            {
-                bx = near.Location.X;
-                by = near.Location.Y - _bar.Height - 2;
-                if (by < 0) by = near.Location.Y + near.Height + 2;
-                if (by < 0) by = 60;
-            }
-            _bar.StartPosition = FormStartPosition.Manual;
-            _bar.Location = new Point(bx, by);
+            _bar.PlaceAt(bx);
             _bar.Show();
             _bar.WindowState = FormWindowState.Normal;
             _bar.TopMost = true;
             _bar.BringToFront();
             _bar.Activate();
-            _bar.TopMost = false;
-            Log.Write("mediasource bar: shown at " + bx + "," + by + " visible=" + _bar.Visible);
+            Log.Write("mediasource bar: shown at x=" + bx);
         }
 
         internal static void Open(string kind)

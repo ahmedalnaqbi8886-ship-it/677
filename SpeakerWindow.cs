@@ -71,9 +71,12 @@ namespace EaxReverbEngine
 
             // ---- احداث ----
             _cmb1.SelectedIndexChanged += delegate { if (!Loading) { Fx.SpeakerMode = _cmb1.SelectedIndex; Reload(); } };
-            _bmPct.ValueChanged += delegate { if (!Loading) { Fx.BmPercent = _bmPct.Value; Reload(); } };
+            // تحريك سلايدر الساب او الكروس أوفر لازم يفعّل Bass Redirection تلقائي
+            // (نفس الطريقة اللي Bass Boost شغالة فيها) - قبل كذا كان تقدر تحرك السلايدر ولا يصير شي لأن
+            // التفعيل الفعلي بالمحرك مربوط بـ BmOn بس، وهذا اللي كان يخلي الميزة "ما تشتغل"
+            _bmPct.ValueChanged += delegate { if (!Loading) { Fx.BmPercent = _bmPct.Value; Fx.BmOn = true; Reload(); } };
             _bmOn.CheckedChanged += delegate { if (!Loading) { Fx.BmOn = _bmOn.Checked; Reload(); } };
-            _bmCross.ValueChanged += delegate { if (!Loading) { Fx.BmCrossover = _bmCross.Value; Reload(); } };
+            _bmCross.ValueChanged += delegate { if (!Loading) { Fx.BmCrossover = _bmCross.Value; Fx.BmOn = true; Reload(); } };
             _bbOn.CheckedChanged += delegate { if (!Loading) { Fx.BassOn = _bbOn.Checked; Reload(); } };
             _bbLevel.ValueChanged += delegate { if (!Loading) { Fx.Bass = _bbLevel.Value; if (Fx.Bass > 0.5f) Fx.BassOn = true; Reload(); } };
             _bbCut.ValueChanged += delegate { if (!Loading) { Fx.BassCutoff = _bbCut.Value; Reload(); } };

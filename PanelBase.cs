@@ -172,14 +172,18 @@ namespace EaxReverbEngine
 
             if (_kind == "eax")
             {
-                // نافذة EAX الاصلية: ايقونتين زينة بس بالشريط السفلي، بدون تنقل بين النوافذ
-                string[] deco = new string[] { "speaker", "mixer" };
-                for (int i = 0; i < deco.Length; i++)
-                {
-                    BarIcon nb = new BarIcon(deco[i]);
-                    nb.Location = new Point(118 + i * 32, 1);
-                    _bar.Controls.Add(nb);
-                }
+                // نافذة EAX الاصلية: الايقونتين تعريف كامل فعلي - توديك لنافذتها الحقيقية، مو مجرد شكل
+                BarIcon spk = new BarIcon("speaker");
+                spk.Location = new Point(118, 1);
+                spk.Click += delegate { EqPanel.OpenFrom("speaker", this); };
+                tt.SetToolTip(spk, "Speaker Settings");
+                _bar.Controls.Add(spk);
+
+                BarIcon eq = new BarIcon("eq");
+                eq.Location = new Point(150, 1);
+                eq.Click += delegate { EqPanel.OpenFrom("eq", this); };
+                tt.SetToolTip(eq, "Graphic Equalizer");
+                _bar.Controls.Add(eq);
                 return;
             }
 

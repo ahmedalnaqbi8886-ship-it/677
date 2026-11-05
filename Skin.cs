@@ -435,7 +435,8 @@ namespace EaxReverbEngine
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
                      ControlStyles.OptimizedDoubleBuffer | ControlStyles.SupportsTransparentBackColor, true);
             BackColor = Color.Transparent;
-            Size = new Size(27, 27);
+            // زر EAX مستطيل (فيه كلمة EAX تحت الترس) زي الاصلي بالضبط - مو مربع زي باقي الايقونات
+            Size = (kind == "eax") ? new Size(46, 28) : new Size(27, 27);
             Cursor = BlueCursor.Arrow;
         }
         public bool On { get { return _on; } set { if (_on != value) { _on = value; Invalidate(); } } }
@@ -491,14 +492,15 @@ namespace EaxReverbEngine
                     Cone(g, b, 14, 13, 0.9f);
                 }
             }
+            int hw = Width - 2, hh = Height - 2;
             if (_on)
             {
-                using (Brush b = new SolidBrush(Color.FromArgb(70, 40, 120, 255))) { g.FillRectangle(b, 1, 1, 25, 25); }
-                using (Pen p = new Pen(Color.FromArgb(0, 95, 210), 2f)) { g.DrawRectangle(p, 1, 1, 24, 24); }
+                using (Brush b = new SolidBrush(Color.FromArgb(70, 40, 120, 255))) { g.FillRectangle(b, 1, 1, hw, hh); }
+                using (Pen p = new Pen(Color.FromArgb(0, 95, 210), 2f)) { g.DrawRectangle(p, 1, 1, hw - 1, hh - 1); }
             }
             else if (_hover)
             {
-                using (Pen p = new Pen(Color.FromArgb(0, 95, 210), 1f)) { g.DrawRectangle(p, 1, 1, 24, 24); }
+                using (Pen p = new Pen(Color.FromArgb(0, 95, 210), 1f)) { g.DrawRectangle(p, 1, 1, hw - 1, hh - 1); }
             }
         }
     }
