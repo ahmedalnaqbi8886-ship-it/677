@@ -23,12 +23,35 @@ namespace EaxReverbEngine
         }
 
         // يعرض شريط MediaSource لحاله فقط - بدون فتح نافذة Equalizer - يستخدم وقت تشغيل البرنامج
-        // عشان الشريط يطلع كتطبيق منفصل مربوط بالمحرك، مش مرتبط بفتح نافذة ثانية
-        public static void ShowBarStandalone(Engine engine)
+        // عشان الشريط يطلع كتطبيق منفصل مربوط بالمحرك، فوق نافذة الهوست تمامًا (مو عايم بمكان عشوائي)
+        public static void ShowBarStandalone(Engine engine, Control host)
         {
             _fx = engine.Fx;
             _closing = false;
-            try { ShowBar(engine.Fx, null); }
+            try
+            {
+                if (_bar == null || _bar.IsDisposed) _bar = new LauncherBar(engine.Fx);
+                Point topLeft = new Point(60, 60);
+                if (host != null)
+                {
+                    try
+                    {
+                        Point hostScreen = host.PointToScreen(Point.Empty);
+                        topLeft = new Point(hostScreen.X, hostScreen.Y - _bar.Height - 2);
+                        if (topLeft.Y < 0) topLeft = new Point(hostScreen.X, hostScreen.Y);
+                    }
+                    catch (Exception) { topLeft = new Point(60, 60); }
+                }
+                _bar.StartPosition = FormStartPosition.Manual;
+                _bar.Location = topLeft;
+                _bar.Show();
+                _bar.WindowState = FormWindowState.Normal;
+                _bar.TopMost = true;
+                _bar.BringToFront();
+                _bar.Activate();
+                _bar.TopMost = false;
+                Log.Write("mediasource bar: standalone shown at " + topLeft.X + "," + topLeft.Y);
+            }
             catch (Exception ex) { Log.Write("mediasource bar: " + ex); }
         }
 
