@@ -117,7 +117,7 @@ namespace EaxReverbEngine
             MaximizeBox = false; MinimizeBox = false; ShowInTaskbar = false;
             StartPosition = FormStartPosition.CenterParent;
             ClientSize = new Size(300, 96);
-            Font = new Font("Tahoma", 8.25f);
+            Font = UiFont.Get(8.25f);
             BackColor = Color.White;
             Cursor = BlueCursor.Arrow;
             Label l = new Label();

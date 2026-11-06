@@ -4,7 +4,8 @@ using System.Windows.Forms;
 
 namespace EaxReverbEngine
 {
-    // EAX Settings: شاشة وحدة (زي الاصلي بالضبط) - Effects + CMSS 3D مضافة بنفس الشاشة، بدون تبويبات
+    // EAX Settings: تبويبين زي الاصلي بالضبط (Effects | CMSS 3D) - مؤكدة من صورة 0137136b
+    // المرجعية (وصفها "Effects tab" صراحة) - مو شاشة وحدة بدون تبويبات
     internal sealed class EaxWindow : PanelBase
     {
         // الاسماء المؤكدة من لقطة الاصلي (Active Preset list) - مرتبة ابجديًا زي الاصلي
@@ -12,6 +13,8 @@ namespace EaxReverbEngine
         {
             "Auditorium", "Bathroom", "Church", "Concert Hall", "Garage", "Haunted Cavern", "Indoor Arena"
         };
+
+        private Tabs _tabs;
 
         private CheckBox _on;
         private ListBox _list;
@@ -21,23 +24,39 @@ namespace EaxReverbEngine
         private CheckBox _cmssOn;
         private CSlider _widen;
 
-        public EaxWindow(FxChain fx) : base(fx, "eax", "EAX Settings", 500, 316)
+        public EaxWindow(FxChain fx) : base(fx, "eax", "EAX Settings", 500, 270)
         {
-            // ---- نفس شاشة الاصلي بالضبط: Effects ----
+            Tabs tabs = new Tabs(new string[] { "Effects", "CMSS 3D" });
+            tabs.SetBounds(0, 0, 500, 29);
+            Body.Controls.Add(tabs);
+            _tabs = tabs;
+
+            Panel[] pg = new Panel[2];
+            for (int i = 0; i < 2; i++)
+            {
+                pg[i] = new Panel();
+                pg[i].SetBounds(0, 29, 500, 241);
+                pg[i].BackColor = Skin.Back;
+                pg[i].Visible = i == 0;
+                Body.Controls.Add(pg[i]);
+            }
+            tabs.Changed += delegate { for (int i = 0; i < 2; i++) pg[i].Visible = tabs.Selected == i; };
+
+            // ---- تبويب Effects ----
             Label desc = new Label();
             desc.Text = "Audio Effects are high quality music enhancement effects created by the powerful audio engine in your sound device.";
             desc.SetBounds(10, 6, 480, 34);
             desc.BackColor = Color.Transparent;
-            Body.Controls.Add(desc);
+            pg[0].Controls.Add(desc);
 
             _on = new CheckBox();
             _on.Text = "Enable Audio Effects";
             _on.AutoSize = true;
             _on.BackColor = Color.Transparent;
             _on.Location = new Point(12, 46);
-            Body.Controls.Add(_on);
+            pg[0].Controls.Add(_on);
 
-            Panel g = Group(Body, "", 6, 72, 488, 158);
+            Panel g = Group(pg[0], "", 6, 72, 488, 158);
 
             Cap(g, "Environment", 10, 10, 120, ContentAlignment.MiddleLeft);
 
@@ -55,21 +74,20 @@ namespace EaxReverbEngine
             _amt = HBar(g, 350, 30, 108, 0, 100);
             Cap(g, "100", 460, 36, 26, ContentAlignment.MiddleLeft);
 
-            // ---- CMSS 3D مضافة بنفس الشاشة (مو تبويب جديد) ----
-            Panel g2 = Group(Body, "", 6, 236, 488, 72);
+            // ---- تبويب CMSS 3D (وظيفة فعلية كاملة - مو رسالة "not part of") ----
+            Panel g2 = Group(pg[1], "", 6, 10, 488, 120);
 
             _cmssOn = new CheckBox();
             _cmssOn.Text = "Enable CMSS 3D Surround";
             _cmssOn.AutoSize = true;
             _cmssOn.BackColor = Color.Transparent;
-            _cmssOn.Location = new Point(8, 6);
+            _cmssOn.Location = new Point(10, 14);
             g2.Controls.Add(_cmssOn);
 
-            Cap(g2, "Stereo Widening", 10, 36, 112, ContentAlignment.MiddleLeft);
-            Cap(g2, "Low", 128, 36, 30, ContentAlignment.MiddleCenter);
-            _widen = HBar(g2, 162, 32, 254, 0, 100);
-            Cap(g2, "High", 422, 36, 34, ContentAlignment.MiddleCenter);
-            _widen.Value = 50;
+            Cap(g2, "Stereo Widening", 12, 54, 112, ContentAlignment.MiddleLeft);
+            Cap(g2, "Low", 130, 54, 30, ContentAlignment.MiddleCenter);
+            _widen = HBar(g2, 164, 50, 254, 0, 100);
+            Cap(g2, "High", 424, 54, 34, ContentAlignment.MiddleCenter);
 
             // ---- احداث ----
             _on.CheckedChanged += delegate { if (!Loading) { Fx.EaxOn = _on.Checked; Apply(); } };
@@ -92,6 +110,10 @@ namespace EaxReverbEngine
 
             Reload();
         }
+
+        // ايقونتي CMSS و EAX بالشريط السفلي بالنوافذ الثانية توديك هنا - كل وحدة لتبويبها
+        public void ShowEffectsTab() { if (_tabs != null) _tabs.Selected = 0; }
+        public void ShowCmssTab() { if (_tabs != null) _tabs.Selected = 1; }
 
         private void Apply()
         {

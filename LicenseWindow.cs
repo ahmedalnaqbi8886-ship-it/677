@@ -59,13 +59,13 @@ namespace EaxReverbEngine
             MinimumSize = new Size(440, 300);
             StartPosition = FormStartPosition.CenterScreen;
             ClientSize = new Size(520, 360);
-            Font = new Font("Tahoma", 8.25f);
+            Font = UiFont.Get(8.25f);
             BackColor = Color.White;
             Cursor = BlueCursor.Arrow;
 
             Label title = new Label();
             title.Text = "Activate your subscription";
-            title.Font = new Font("Tahoma", 11f, FontStyle.Bold);
+            title.Font = UiFont.Get(11f, FontStyle.Bold);
             title.SetBounds(16, 14, 480, 22);
             title.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
             Controls.Add(title);

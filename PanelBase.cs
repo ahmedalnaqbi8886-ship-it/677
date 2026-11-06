@@ -29,7 +29,7 @@ namespace EaxReverbEngine
             _kind = kind;
             _title = title;
             Text = title;
-            Font = new Font("Tahoma", 8.25f);
+            Font = UiFont.Get(8.25f);
             FormBorderStyle = FormBorderStyle.None;
             StartPosition = FormStartPosition.CenterScreen;
             BackColor = Skin.Back;
@@ -74,7 +74,7 @@ namespace EaxReverbEngine
                     if (ic != null) tx = 13 + ic.Width + 10;
                     if (ttl.StartsWith("EAX ")) ttl = ttl.Substring(4);
                 }
-                using (Font f = new Font("Tahoma", 10f, FontStyle.Bold))
+                using (Font f = UiFont.Get(10f, FontStyle.Bold))
                 { TextRenderer.DrawText(g, ttl, f, new Point(tx, 9), Color.Black); }
             };
             _head.MouseDown += delegate(object s, MouseEventArgs e)
@@ -102,7 +102,7 @@ namespace EaxReverbEngine
             _head.Controls.Add(help);
 
             Label min = new Label();
-            min.Text = "_"; min.Font = new Font("Tahoma", 10f, FontStyle.Bold);
+            min.Text = "_"; min.Font = UiFont.Get(10f, FontStyle.Bold);
             min.ForeColor = Color.FromArgb(110, 110, 110);
             min.BackColor = Color.Transparent; min.Cursor = BlueCursor.Arrow;
             min.SetBounds(w - 50, 8, 24, 22); min.TextAlign = ContentAlignment.MiddleCenter;
@@ -110,7 +110,7 @@ namespace EaxReverbEngine
             _head.Controls.Add(min);
 
             Label close = new Label();
-            close.Text = "X"; close.Font = new Font("Tahoma", 9f);
+            close.Text = "X"; close.Font = UiFont.Get(9f);
             close.ForeColor = Color.FromArgb(110, 110, 110);
             close.BackColor = Color.Transparent; close.Cursor = BlueCursor.Arrow;
             close.SetBounds(w - 28, 8, 22, 22); close.TextAlign = ContentAlignment.MiddleCenter;
@@ -180,9 +180,23 @@ namespace EaxReverbEngine
                 string kk = k;
                 BarIcon nb = new BarIcon(kk);
                 nb.Location = new Point(bx, 1);
-                if (kk == "cmss" || kk == "eax")
+                if (kk == "eax")
                 {
-                    nb.Click += delegate { EqPanel.OpenFrom("eax", this); };
+                    nb.Click += delegate
+                    {
+                        PanelBase opened = EqPanel.OpenFrom("eax", this);
+                        EaxWindow ew = opened as EaxWindow;
+                        if (ew != null) ew.ShowEffectsTab();
+                    };
+                }
+                else if (kk == "cmss")
+                {
+                    nb.Click += delegate
+                    {
+                        PanelBase opened = EqPanel.OpenFrom("eax", this);
+                        EaxWindow ew = opened as EaxWindow;
+                        if (ew != null) ew.ShowCmssTab();
+                    };
                 }
                 else if (kk == "test")
                 {

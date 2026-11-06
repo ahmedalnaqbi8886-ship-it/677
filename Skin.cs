@@ -145,7 +145,7 @@ namespace EaxReverbEngine
                     else DrawThumb(g, new Rectangle(cx - 8, ty - 12, 16, 24), true);
                     if (Column && !string.IsNullOrEmpty(Text))
                     {
-                        using (Font ft = new Font("Tahoma", 9f, FontStyle.Bold))
+                        using (Font ft = UiFont.Get(9f, FontStyle.Bold))
                         { TextRenderer.DrawText(g, Text, ft, new Rectangle(0, Height - 24, Width, 20), Color.FromArgb(60, 60, 60), TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter); }
                     }
                 }
@@ -315,7 +315,7 @@ namespace EaxReverbEngine
                      ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.Selectable, true);
             Size = new Size(86, 24);
             Cursor = BlueCursor.Arrow;
-            Font = new Font("Tahoma", 9f);
+            Font = UiFont.Get(9f);
             ForeColor = Color.Black;
         }
         protected override void OnMouseEnter(EventArgs e) { _hover = true; Invalidate(); base.OnMouseEnter(e); }
@@ -367,7 +367,7 @@ namespace EaxReverbEngine
                      ControlStyles.OptimizedDoubleBuffer | ControlStyles.ResizeRedraw | ControlStyles.Selectable, true);
             Size = new Size(58, 22);
             Cursor = BlueCursor.Arrow;
-            Font = new Font("Tahoma", 10f, FontStyle.Bold);
+            Font = UiFont.Get(10f, FontStyle.Bold);
         }
 
         private bool IsLeftSide(Point p) { return p.X < Width / 2; }
@@ -576,7 +576,7 @@ namespace EaxReverbEngine
                     g.DrawArc(wave, Width / 2f - 26f, cy - 26f, 52f, 52f, 200, 140);
                 }
             }
-            using (Font f = new Font("Tahoma", 7.5f))
+            using (Font f = UiFont.Get(7.5f))
             {
                 TextRenderer.DrawText(g, Caption, f, new Rectangle(0, 37, Width, 13), Color.FromArgb(40, 40, 46),
                     TextFormatFlags.HorizontalCenter | TextFormatFlags.Top);

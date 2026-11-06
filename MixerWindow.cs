@@ -53,7 +53,7 @@ namespace EaxReverbEngine
             Panel g3 = Group(basic, "", 438, 6, 56, 204);
             Label rec = Cap(g3, "● Output", 4, 8, 52, ContentAlignment.MiddleCenter);
             rec.ForeColor = Color.FromArgb(220, 0, 0);
-            rec.Font = new Font("Tahoma", 7f, FontStyle.Bold);
+            rec.Font = UiFont.Get(7f, FontStyle.Bold);
             _mL = new MeterBar(); _mL.Size = new Size(12, 140); _mL.Location = new Point(12, 36); g3.Controls.Add(_mL);
             _mR = new MeterBar(); _mR.Size = new Size(12, 140); _mR.Location = new Point(32, 36); g3.Controls.Add(_mR);
 
@@ -101,7 +101,7 @@ namespace EaxReverbEngine
             {
                 VLabel v = new VLabel();
                 v.Text = caption;
-                v.Font = new Font("Tahoma", 8.25f);
+                v.Font = UiFont.Get(8.25f);
                 v.SetBounds(cx - 28, y + 10, 14, h - 20);
                 parent.Controls.Add(v);
             }
