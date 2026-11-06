@@ -15,12 +15,14 @@ namespace EaxReverbEngine
         private Label _vBmCross, _vBbLevel, _vBbCut;
         private CheckBox _bmOn, _bbOn;
         private readonly Timer _tm = new Timer();
+        private Tabs _tabs;
 
         public SpeakerWindow(FxChain fx) : base(fx, "speaker", "Speaker Settings", 500, 270)
         {
             Tabs tabs = new Tabs(new string[] { "Speaker Selection", "Bass Management", "Bass Boost" });
             tabs.SetBounds(0, 0, 500, 29);
             Body.Controls.Add(tabs);
+            _tabs = tabs;
             Panel[] pg = new Panel[3];
             for (int i = 0; i < 3; i++)
             {
@@ -107,6 +109,9 @@ namespace EaxReverbEngine
         }
 
         protected override void DoDefault() { Fx.ResetSpeaker(); Fx.StopTest(); }
+
+        // ايقونة "Speaker Test" بالشريط السفلي توديك هنا - تبويب Speaker Selection اللي فيه مجموعة الفحص
+        public void ShowSpeakerTestTab() { if (_tabs != null) _tabs.Selected = 0; }
 
         public override void Reload()
         {

@@ -435,8 +435,10 @@ namespace EaxReverbEngine
             SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint |
                      ControlStyles.OptimizedDoubleBuffer | ControlStyles.SupportsTransparentBackColor, true);
             BackColor = Color.Transparent;
-            // زر EAX مستطيل (فيه كلمة EAX تحت الترس) زي الاصلي بالضبط - مو مربع زي باقي الايقونات
-            Size = (kind == "eax") ? new Size(46, 28) : new Size(27, 27);
+            // كل ازرار الشريط نفس المقاس بالاصلي (مربعة متطابقة) - قسناها بدقة من لقطات الشاشة
+            // المرجعية (كل الايقونات 31×30 بكسل بنفس المقياس)، فما فيه داعي نخصص مقاس لأي نوع.
+            // 29×29 يضمن اكبر صورة عندنا (27×26) ما تنقطع، مع هامش بسيط حوالين كل ايقونة
+            Size = new Size(29, 29);
             Cursor = BlueCursor.Arrow;
         }
         public bool On { get { return _on; } set { if (_on != value) { _on = value; Invalidate(); } } }
@@ -452,6 +454,8 @@ namespace EaxReverbEngine
                 case "mixer": return "ic_caps";
                 case "badge": return "ic_fx";
                 case "eax": return "ic_eax";
+                case "cmss": return "ic_cmss";
+                case "test": return "ic_test";
                 default: return null;
             }
         }

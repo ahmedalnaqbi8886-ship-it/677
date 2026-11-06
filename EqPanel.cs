@@ -65,7 +65,7 @@ namespace EaxReverbEngine
             if (_fx != null) Open(_fx, kind);
         }
 
-        internal static void OpenFrom(string kind, Form current)
+        internal static PanelBase OpenFrom(string kind, Form current)
         {
             Point loc = current.Location;
             PanelBase w = Open(_fx, kind);
@@ -75,6 +75,7 @@ namespace EaxReverbEngine
                 w.Location = loc;
                 current.Hide();
             }
+            return w;
         }
 
         internal static PanelBase Open(FxChain fx, string kind)

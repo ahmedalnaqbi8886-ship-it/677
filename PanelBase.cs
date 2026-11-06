@@ -98,13 +98,7 @@ namespace EaxReverbEngine
 
             HelpArrowButton help = new HelpArrowButton();
             help.SetBounds(w - 122, 7, 58, 22);
-            help.HelpClick += delegate
-            {
-                MessageBox.Show(this,
-                    "Audio effects panel.\r\nEqualizer, Surround Mixer and Speaker Settings.\r\n\r\n" +
-                    "© ALNAQBI\r\nDiscord: https://discord.gg/n7-r",
-                    _title);
-            };
+            help.HelpClick += delegate { HelpFile.Open(); };
             _head.Controls.Add(help);
 
             Label min = new Label();
@@ -170,34 +164,42 @@ namespace EaxReverbEngine
 
             ToolTip tt = new ToolTip();
 
-            if (_kind == "eax")
-            {
-                // نافذة EAX الاصلية: الايقونتين تعريف كامل فعلي - توديك لنافذتها الحقيقية، مو مجرد شكل
-                BarIcon spk = new BarIcon("speaker");
-                spk.Location = new Point(118, 1);
-                spk.Click += delegate { EqPanel.OpenFrom("speaker", this); };
-                tt.SetToolTip(spk, "Speaker Settings");
-                _bar.Controls.Add(spk);
+            // ترتيب الايقونات زي الاصلي بالضبط: CMSS, EAX, Mixer, Speaker, Speaker Test, Equalizer.
+            // كل نافذة تستثني بس الايقونة (الايقونات) اللي ترجع لنفسها - و CMSS مدموجة بنافذة EAX
+            // فتستثنى الاثنتين مع بعض بس بنافذة EAX نفسها.
+            string[] allKinds = new string[] { "cmss", "eax", "mixer", "speaker", "test", "eq" };
+            string[] allTips = new string[] { "CMSS 3D", "EAX Settings", "Surround Mixer", "Speaker Settings", "Speaker Test", "Graphic Equalizer" };
 
-                BarIcon eq = new BarIcon("eq");
-                eq.Location = new Point(150, 1);
-                eq.Click += delegate { EqPanel.OpenFrom("eq", this); };
-                tt.SetToolTip(eq, "Graphic Equalizer");
-                _bar.Controls.Add(eq);
-                return;
-            }
-
-            string[] kinds = new string[] { "eq", "speaker", "mixer" };
-            string[] tips = new string[] { "Equalizer", "Speaker Settings", "Surround Mixer" };
-            for (int i = 0; i < kinds.Length; i++)
+            int bx = 118;
+            for (int i = 0; i < allKinds.Length; i++)
             {
-                string k = kinds[i];
-                BarIcon nb = new BarIcon(k);
-                nb.On = (k == _kind);
-                nb.Location = new Point(118 + i * 32, 1);
-                nb.Click += delegate { EqPanel.OpenFrom(k, this); };
-                tt.SetToolTip(nb, tips[i]);
+                string k = allKinds[i];
+                bool isSelf = (k == _kind) || ((k == "cmss" || k == "eax") && _kind == "eax");
+                if (isSelf) continue;
+
+                string kk = k;
+                BarIcon nb = new BarIcon(kk);
+                nb.Location = new Point(bx, 1);
+                if (kk == "cmss" || kk == "eax")
+                {
+                    nb.Click += delegate { EqPanel.OpenFrom("eax", this); };
+                }
+                else if (kk == "test")
+                {
+                    nb.Click += delegate
+                    {
+                        PanelBase w = EqPanel.OpenFrom("speaker", this);
+                        SpeakerWindow sw = w as SpeakerWindow;
+                        if (sw != null) sw.ShowSpeakerTestTab();
+                    };
+                }
+                else
+                {
+                    nb.Click += delegate { EqPanel.OpenFrom(kk, this); };
+                }
+                tt.SetToolTip(nb, allTips[i]);
                 _bar.Controls.Add(nb);
+                bx += nb.Width + 5;
             }
         }
 
