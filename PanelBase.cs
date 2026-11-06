@@ -323,18 +323,34 @@ namespace EaxReverbEngine
                 g.SmoothingMode = SmoothingMode.AntiAlias;
                 g.Clear(Color.White);
                 int w = Width / _names.Length;
+
+                // كرت واحد موحد يغطي كامل شريط التبويبات (مؤكد بقياس بكسل من صورة مرجعية حقيقية:
+                // ما فيه كرت منفصل لكل تبويب براسه - غلط كان نسويه قبل). التبويب المفعل ياخذ
+                // تدرج رمادي اغمق شوي جوا نفس الكرت، والباقي يبقى فاتح تقريبا ابيض - زي الاصلي تمامًا.
+                Rectangle full = new Rectangle(0, 0, Width - 1, Height - 1);
+                using (GraphicsPath gp = Skin.RoundTop(full, 7))
+                {
+                    using (Region clip = new Region(gp))
+                    {
+                        g.Clip = clip;
+                        using (Brush bg = new SolidBrush(Color.FromArgb(251, 251, 251))) { g.FillRectangle(bg, full); }
+                        Rectangle sel = new Rectangle(_sel * w, 0, w, Height);
+                        using (LinearGradientBrush b = new LinearGradientBrush(sel, Color.FromArgb(234, 234, 234), Color.FromArgb(211, 211, 211), 90f))
+                        { g.FillRectangle(b, sel); }
+                    }
+                    g.ResetClip();
+                    using (Pen p = new Pen(Color.FromArgb(150, 150, 154))) { g.DrawPath(p, gp); }
+                }
+
+                // خط فاصل رفيع بين كل تبويبين متجاورين - بدل ما يبانون كرتين مقطوعين عن بعض
+                for (int i = 1; i < _names.Length; i++)
+                {
+                    using (Pen dp = new Pen(Color.FromArgb(195, 195, 198)))
+                    { g.DrawLine(dp, i * w, 6, i * w, Height - 7); }
+                }
+
                 for (int i = 0; i < _names.Length; i++)
                 {
-                    if (i == _sel)
-                    {
-                        Rectangle r = new Rectangle(i * w + 1, 0, w - 2, Height + 10);
-                        using (GraphicsPath gp = Skin.Round(r, 7))
-                        {
-                            using (LinearGradientBrush b = new LinearGradientBrush(new Rectangle(r.X, r.Y, r.Width, Height), Color.FromArgb(246, 246, 246), Color.FromArgb(222, 219, 222), 90f))
-                            { g.FillPath(b, gp); }
-                            using (Pen p = new Pen(Color.FromArgb(150, 150, 154))) { g.DrawPath(p, gp); }
-                        }
-                    }
                     TextRenderer.DrawText(g, _names[i], Font, new Rectangle(i * w, 0, w, Height - 2), Color.Black,
                         TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
                 }

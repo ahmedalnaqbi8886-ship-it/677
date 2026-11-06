@@ -31,6 +31,24 @@ namespace EaxReverbEngine
             p.CloseFigure();
             return p;
         }
+
+        // زي Round بالضبط، بس الزاويتين تحت (يسار/يمين) ما تنحني - تطلع مربعة على طول.
+        // تستخدم لكرت شريط التبويبات (Tabs) عشان يطلع كرت واحد مفتوح من تحت يندمج مع
+        // المحتوى اللي تحته - زي الاصلي بالضبط - بدل ما يبان "كرت" مقفول من كل الجهات.
+        public static GraphicsPath RoundTop(Rectangle r, int rad)
+        {
+            GraphicsPath p = new GraphicsPath();
+            int d = rad * 2;
+            if (d > r.Height) d = r.Height;
+            if (d > r.Width) d = r.Width;
+            if (d < 1) d = 1;
+            p.AddArc(r.X, r.Y, d, d, 180, 90);
+            p.AddArc(r.Right - d, r.Y, d, d, 270, 90);
+            p.AddLine(r.Right, r.Y + d / 2, r.Right, r.Bottom);
+            p.AddLine(r.X, r.Bottom, r.X, r.Y + d / 2);
+            p.CloseFigure();
+            return p;
+        }
     }
 
     internal enum SliderKind { Eq, Mixer, Horiz }
