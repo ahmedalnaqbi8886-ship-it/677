@@ -188,8 +188,8 @@ namespace EaxReverbEngine
                 {
                     nb.Click += delegate
                     {
-                        PanelBase w = EqPanel.OpenFrom("speaker", this);
-                        SpeakerWindow sw = w as SpeakerWindow;
+                        PanelBase opened = EqPanel.OpenFrom("speaker", this);
+                        SpeakerWindow sw = opened as SpeakerWindow;
                         if (sw != null) sw.ShowSpeakerTestTab();
                     };
                 }
