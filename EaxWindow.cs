@@ -26,7 +26,7 @@ namespace EaxReverbEngine
 
         public EaxWindow(FxChain fx) : base(fx, "eax", "EAX Settings", 500, 270)
         {
-            Tabs tabs = new Tabs(new string[] { "Effects", "CMSS 3D" });
+            Tabs tabs = new Tabs(new string[] { "Effects", "CMSS 3D" }, new string[] { "fx", "cmss" });
             tabs.SetBounds(0, 0, 500, 29);
             Body.Controls.Add(tabs);
             _tabs = tabs;

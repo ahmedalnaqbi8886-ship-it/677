@@ -299,11 +299,17 @@ namespace EaxReverbEngine
         protected sealed class Tabs : Control
         {
             private readonly string[] _names;
+            private readonly string[] _icons;
             private int _sel;
             public event EventHandler Changed;
-            public Tabs(string[] names)
+            public Tabs(string[] names) : this(names, null) { }
+            // icons: نفس عدد names، كل عنصر "fx"/"cmss"/null - لو تركتها null ما يرسم ايقونات
+            // (هذا يخلي باقي النوافذ اللي تستخدم Tabs - Mixer, Speaker - زي ما هي بدون تغيير،
+            // عشان ما عندي صور مرجعية لايقوناتها فما ابي اخترعها).
+            public Tabs(string[] names, string[] icons)
             {
                 _names = names;
+                _icons = icons;
                 SetStyle(ControlStyles.UserPaint | ControlStyles.AllPaintingInWmPaint | ControlStyles.OptimizedDoubleBuffer, true);
                 Height = 29;
                 Cursor = BlueCursor.Arrow;
@@ -351,9 +357,63 @@ namespace EaxReverbEngine
 
                 for (int i = 0; i < _names.Length; i++)
                 {
-                    TextRenderer.DrawText(g, _names[i], Font, new Rectangle(i * w, 0, w, Height - 2), Color.Black,
-                        TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                    string ic = (_icons != null && i < _icons.Length) ? _icons[i] : null;
+                    Rectangle cell = new Rectangle(i * w, 0, w, Height - 2);
+                    if (ic == null)
+                    {
+                        TextRenderer.DrawText(g, _names[i], Font, cell, Color.Black,
+                            TextFormatFlags.HorizontalCenter | TextFormatFlags.VerticalCenter);
+                    }
+                    else
+                    {
+                        Size ts = TextRenderer.MeasureText(g, _names[i], Font, Size.Empty, TextFormatFlags.NoPadding);
+                        int iw = 15, gap = 5;
+                        int gx = cell.X + (cell.Width - (iw + gap + ts.Width)) / 2;
+                        int gy = cell.Y + (cell.Height - iw) / 2;
+                        DrawTabIcon(g, ic, gx, gy, iw);
+                        Rectangle tr = new Rectangle(gx + iw + gap, cell.Y, ts.Width + 4, cell.Height);
+                        TextRenderer.DrawText(g, _names[i], Font, tr, Color.Black,
+                            TextFormatFlags.Left | TextFormatFlags.VerticalCenter);
+                    }
                 }
+            }
+
+            // رسم مبسط (خطوط واشكال اساسية زي باقي ايقونات البرنامج) يقارب شكل ايقونتي
+            // Effects/CMSS 3D من الصورة المرجعية - تقريب مو نسخ حرفي، لان المصدر سكرين شوت صغير.
+            private static void DrawTabIcon(Graphics g, string kind, int x, int y, int size)
+            {
+                if (kind == "fx")
+                {
+                    Color c = Color.FromArgb(45, 110, 215);
+                    using (Pen bp = new Pen(c, 1.2f)) { g.DrawEllipse(bp, x, y + 3, size - 5, size - 6); }
+                    using (Brush db = new SolidBrush(c))
+                    {
+                        g.FillEllipse(db, x + 3, y + 6, 2, 2);
+                        g.FillEllipse(db, x + 7, y + 8, 2, 2);
+                    }
+                    using (Brush sb = new SolidBrush(c)) { DrawSparkle(g, sb, x + size - 5, y + 3, 5); }
+                }
+                else if (kind == "cmss")
+                {
+                    Color c = Color.FromArgb(90, 90, 96);
+                    using (Pen cp = new Pen(c, 1.2f))
+                    {
+                        g.DrawEllipse(cp, x, y + 4, size - 6, size - 7);
+                        g.DrawEllipse(cp, x + 5, y, size - 6, size - 7);
+                    }
+                }
+            }
+
+            private static void DrawSparkle(Graphics g, Brush br, int cx, int cy, int r)
+            {
+                PointF[] pts = new PointF[]
+                {
+                    new PointF(cx, cy - r), new PointF(cx + r / 3f, cy - r / 3f),
+                    new PointF(cx + r, cy), new PointF(cx + r / 3f, cy + r / 3f),
+                    new PointF(cx, cy + r), new PointF(cx - r / 3f, cy + r / 3f),
+                    new PointF(cx - r, cy), new PointF(cx - r / 3f, cy - r / 3f)
+                };
+                g.FillPolygon(br, pts);
             }
         }
 
