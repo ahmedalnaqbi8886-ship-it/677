@@ -88,6 +88,7 @@ namespace EaxReverbEngine
                 if (kind == "speaker") w = new SpeakerWindow(fx);
                 else if (kind == "mixer") w = new MixerWindow(fx);
                 else if (kind == "eax") w = new EaxWindow(fx);
+                else if (kind == "cmss") w = new CmssWindow(fx);
                 else w = new EqWindow(fx);
                 Wins[kind] = w;
             }

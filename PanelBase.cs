@@ -63,7 +63,9 @@ namespace EaxReverbEngine
                 {
                     using (Pen p = new Pen(Color.FromArgb(sh[i], sh[i], sh[i]))) { g.DrawLine(p, 0, 36 + i, _head.Width, 36 + i); }
                 }
-                string an = _kind == "speaker" ? "hdr_spk" : (_kind == "mixer" ? "hdr_mix" : (_kind == "eax" ? "hdr_fx" : "hdr_eq"));
+                // ملاحظة: ما فيه شعار hdr_cmss مخصص (ما عندي صورة مرجعية له) - استعرت نفس
+                // شعار hdr_fx (EAX) لنافذة CMSS لانها من نفس العائلة بالمنتج الاصلي، مو تخمين كيفي.
+                string an = _kind == "speaker" ? "hdr_spk" : (_kind == "mixer" ? "hdr_mix" : ((_kind == "eax" || _kind == "cmss") ? "hdr_fx" : "hdr_eq"));
                 Bitmap ic = Assets.Get(an);
                 if (ic != null) g.DrawImage(ic, 13, 4, ic.Width, ic.Height);
                 string ttl = _title;
@@ -165,8 +167,8 @@ namespace EaxReverbEngine
             ToolTip tt = new ToolTip();
 
             // ترتيب الايقونات زي الاصلي بالضبط: CMSS, EAX, Mixer, Speaker, Speaker Test, Equalizer.
-            // كل نافذة تستثني بس الايقونة (الايقونات) اللي ترجع لنفسها - و CMSS مدموجة بنافذة EAX
-            // فتستثنى الاثنتين مع بعض بس بنافذة EAX نفسها.
+            // كل نافذة تستثني بس الايقونة اللي ترجع لنفسها - CMSS صارت نافذة مستقلة (CmssWindow)
+            // زي Equalizer بالضبط، مو تبويب جوا EAX Settings (بطلب صريح من المستخدم).
             string[] allKinds = new string[] { "cmss", "eax", "mixer", "speaker", "test", "eq" };
             string[] allTips = new string[] { "CMSS 3D", "EAX Settings", "Surround Mixer", "Speaker Settings", "Speaker Test", "Graphic Equalizer" };
 
@@ -174,31 +176,13 @@ namespace EaxReverbEngine
             for (int i = 0; i < allKinds.Length; i++)
             {
                 string k = allKinds[i];
-                bool isSelf = (k == _kind) || ((k == "cmss" || k == "eax") && _kind == "eax");
+                bool isSelf = (k == _kind);
                 if (isSelf) continue;
 
                 string kk = k;
                 BarIcon nb = new BarIcon(kk);
                 nb.Location = new Point(bx, 1);
-                if (kk == "eax")
-                {
-                    nb.Click += delegate
-                    {
-                        PanelBase opened = EqPanel.OpenFrom("eax", this);
-                        EaxWindow ew = opened as EaxWindow;
-                        if (ew != null) ew.ShowEffectsTab();
-                    };
-                }
-                else if (kk == "cmss")
-                {
-                    nb.Click += delegate
-                    {
-                        PanelBase opened = EqPanel.OpenFrom("eax", this);
-                        EaxWindow ew = opened as EaxWindow;
-                        if (ew != null) ew.ShowCmssTab();
-                    };
-                }
-                else if (kk == "test")
+                if (kk == "test")
                 {
                     nb.Click += delegate
                     {
