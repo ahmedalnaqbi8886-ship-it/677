@@ -1,147 +1,138 @@
-using System;
+﻿using System;
 using System.Drawing;
 using System.Windows.Forms;
 
 namespace EaxReverbEngine
 {
-    // EAX Settings: تبويبين Effects | CMSS 3D جوا نفس النافذة (مؤكدة من صورة EAX CONSOLE
-    // المرجعية) - رجعناها كذا بطلب صريح بعد ما جربنا نافذة CMSS مستقلة ولا زبطت للمستخدم.
-    // CMSS صار تبويب بس، مو "kind" مستقل - ما يتفتح من EqPanel ولا له ايقونة بالشريط السفلي.
-    internal sealed class EaxWindow : PanelBase
-    {
-        // الاسماء المؤكدة من لقطة الاصلي (Active Preset list) - مرتبة ابجديًا زي الاصلي
-        private static readonly string[] Presets = new string[]
-        {
-            "Auditorium", "Bathroom", "Church", "Concert Hall", "Garage", "Haunted Cavern", "Indoor Arena"
-        };
+	// Token: 0x02000005 RID: 5
+	internal sealed partial class EaxWindow : PanelBase
+	{
+		// Token: 0x06000012 RID: 18 RVA: 0x00003944 File Offset: 0x00001B44
+		public EaxWindow(FxChain fx) : base(fx, "eax", "EAX Settings", 500, 260)
+		{
+			Label label = new Label();
+			label.Text = "Audio Effects are high quality music enhancement effects created by the powerful audio engine in your sound device.";
+			label.SetBounds(10, 6, 480, 34);
+			label.BackColor = Color.Transparent;
+			this.Body.Controls.Add(label);
+			this._on = new CheckBox();
+			this._on.Text = "Enable Audio Effects";
+			this._on.AutoSize = true;
+			this._on.BackColor = Color.Transparent;
+			this._on.Location = new Point(12, 46);
+			this.Body.Controls.Add(this._on);
+			Panel panel = base.Group(this.Body, "", 6, 72, 488, 158);
+			base.Cap(panel, "Environment", 10, 10, 120, ContentAlignment.MiddleLeft);
+			base.Cap(panel, "Active Preset", 140, 10, 160, ContentAlignment.MiddleLeft);
+			this._presetVal = base.Cap(panel, EaxWindow.Presets[0], 140, 26, 170, ContentAlignment.MiddleLeft);
+			this._list = new ListBox();
+			this._list.SetBounds(140, 46, 170, 100);
+			this._list.IntegralHeight = false;
+			ListBox.ObjectCollection items = this._list.Items;
+			object[] presets = EaxWindow.Presets;
+			items.AddRange(presets);
+			panel.Controls.Add(this._list);
+			this._amtVal = base.Cap(panel, "Effects Amount : 0", 330, 10, 150, ContentAlignment.MiddleLeft);
+			base.Cap(panel, "0", 330, 36, 18, ContentAlignment.MiddleLeft);
+			this._amt = base.HBar(panel, 350, 30, 108, 0, 100);
+			base.Cap(panel, "100", 460, 36, 26, ContentAlignment.MiddleLeft);
+			this._on.CheckedChanged += delegate(object <p0>, EventArgs <p1>)
+			{
+				if (!this.Loading)
+				{
+					this.Fx.EaxOn = this._on.Checked;
+					this.Apply();
+				}
+			};
+			this._list.SelectedIndexChanged += delegate(object <p0>, EventArgs <p1>)
+			{
+				if (this._list.SelectedIndex >= 0)
+				{
+					string text = EaxWindow.Presets[this._list.SelectedIndex];
+					this._presetVal.Text = text;
+					if (!this.Loading)
+					{
+						this.Fx.EaxPreset = text;
+						this.Apply();
+					}
+				}
+			};
+			this._amt.ValueChanged += delegate(object <p0>, EventArgs <p1>)
+			{
+				this._amtVal.Text = "Effects Amount : " + this._amt.Value.ToString();
+				if (!this.Loading)
+				{
+					this.Fx.EaxAmount = this._amt.Value;
+					this.Apply();
+				}
+			};
+			this.Reload();
+		}
 
-        private CheckBox _on;
-        private ListBox _list;
-        private Label _presetVal, _amtVal;
-        private CSlider _amt;
+		// Token: 0x06000013 RID: 19 RVA: 0x00003B87 File Offset: 0x00001D87
+		private void Apply()
+		{
+			EngineBoot.SetState(this.Fx.EaxOn, this.Fx.EaxPreset, this.Fx.EaxAmount);
+		}
 
-        private CheckBox _cmssOn;
-        private CSlider _widen;
+		// Token: 0x06000014 RID: 20 RVA: 0x00003BAF File Offset: 0x00001DAF
+		protected override void DoDefault()
+		{
+			this.Fx.EaxOn = false;
+			this.Fx.EaxAmount = 0;
+			this.Fx.EaxPreset = EaxWindow.Presets[0];
+		}
 
-        public EaxWindow(FxChain fx) : base(fx, "eax", "EAX Settings", 500, 270)
-        {
-            Tabs tabs = new Tabs(new string[] { "Effects", "CMSS 3D" }, new string[] { "fx", "cmss" });
-            tabs.SetBounds(0, 0, 500, 29);
-            Body.Controls.Add(tabs);
+		// Token: 0x06000015 RID: 21 RVA: 0x00003BDC File Offset: 0x00001DDC
+		public override void Reload()
+		{
+			bool loading = this.Loading;
+			this.Loading = true;
+			try
+			{
+				this._on.Checked = this.Fx.EaxOn;
+				int num = Array.IndexOf<string>(EaxWindow.Presets, this.Fx.EaxPreset);
+				if (num < 0)
+				{
+					num = 0;
+				}
+				this._list.SelectedIndex = num;
+				this._presetVal.Text = EaxWindow.Presets[num];
+				this._amt.Value = this.Fx.EaxAmount;
+				this._amtVal.Text = "Effects Amount : " + this.Fx.EaxAmount.ToString();
+			}
+			finally
+			{
+				this.Loading = loading;
+			}
+			this.Apply();
+		}
 
-            Panel[] pg = new Panel[2];
-            for (int i = 0; i < 2; i++)
-            {
-                pg[i] = new Panel();
-                pg[i].SetBounds(0, 29, 500, 241);
-                pg[i].BackColor = Skin.Back;
-                pg[i].Visible = i == 0;
-                Body.Controls.Add(pg[i]);
-            }
-            tabs.Changed += delegate { for (int i = 0; i < 2; i++) pg[i].Visible = tabs.Selected == i; };
+		// Token: 0x0400003C RID: 60
+		private static readonly string[] Presets = new string[]
+		{
+			"Bathroom",
+			"Church",
+			"Concert Hall",
+			"Garage",
+			"Haunted Cavern",
+			"Indoor Arena",
+			"Living Room"
+		};
 
-            // ---- تبويب Effects ----
-            Label desc = new Label();
-            desc.Text = "Audio Effects are high quality music enhancement effects created by the powerful audio engine in your sound device.";
-            desc.SetBounds(10, 6, 480, 34);
-            desc.BackColor = Color.Transparent;
-            pg[0].Controls.Add(desc);
+		// Token: 0x0400003D RID: 61
+		private CheckBox _on;
 
-            _on = new CheckBox();
-            _on.Text = "Enable Audio Effects";
-            _on.AutoSize = true;
-            _on.BackColor = Color.Transparent;
-            _on.Location = new Point(12, 46);
-            pg[0].Controls.Add(_on);
+		// Token: 0x0400003E RID: 62
+		private ListBox _list;
 
-            Panel g = Group(pg[0], "", 6, 72, 488, 158);
+		// Token: 0x0400003F RID: 63
+		private Label _presetVal;
 
-            Cap(g, "Environment", 10, 10, 120, ContentAlignment.MiddleLeft);
+		// Token: 0x04000040 RID: 64
+		private Label _amtVal;
 
-            Cap(g, "Active Preset", 140, 10, 160, ContentAlignment.MiddleLeft);
-            _presetVal = Cap(g, Presets[0], 140, 26, 170, ContentAlignment.MiddleLeft);
-
-            _list = new ListBox();
-            _list.SetBounds(140, 46, 170, 100);
-            _list.IntegralHeight = false;
-            _list.Items.AddRange(Presets);
-            g.Controls.Add(_list);
-
-            _amtVal = Cap(g, "Effects Amount : 0", 330, 10, 150, ContentAlignment.MiddleLeft);
-            Cap(g, "0", 330, 36, 18, ContentAlignment.MiddleLeft);
-            _amt = HBar(g, 350, 30, 108, 0, 100);
-            Cap(g, "100", 460, 36, 26, ContentAlignment.MiddleLeft);
-
-            // ---- تبويب CMSS 3D (وظيفة فعلية كاملة، نفس المحتوى اللي كان بالنافذة المستقلة) ----
-            Panel g2 = Group(pg[1], "", 6, 10, 488, 120);
-
-            _cmssOn = new CheckBox();
-            _cmssOn.Text = "Enable CMSS 3D Surround";
-            _cmssOn.AutoSize = true;
-            _cmssOn.BackColor = Color.Transparent;
-            _cmssOn.Location = new Point(10, 14);
-            g2.Controls.Add(_cmssOn);
-
-            Cap(g2, "Stereo Widening", 12, 54, 112, ContentAlignment.MiddleLeft);
-            Cap(g2, "Low", 130, 54, 30, ContentAlignment.MiddleCenter);
-            _widen = HBar(g2, 164, 50, 254, 0, 100);
-            Cap(g2, "High", 424, 54, 34, ContentAlignment.MiddleCenter);
-
-            // ---- احداث ----
-            _on.CheckedChanged += delegate { if (!Loading) { Fx.EaxOn = _on.Checked; Apply(); } };
-            _list.SelectedIndexChanged += delegate
-            {
-                if (_list.SelectedIndex >= 0)
-                {
-                    string p = Presets[_list.SelectedIndex];
-                    _presetVal.Text = p;
-                    if (!Loading) { Fx.EaxPreset = p; Apply(); }
-                }
-            };
-            _amt.ValueChanged += delegate
-            {
-                _amtVal.Text = "Effects Amount : " + _amt.Value;
-                if (!Loading) { Fx.EaxAmount = _amt.Value; Apply(); }
-            };
-            _cmssOn.CheckedChanged += delegate { if (!Loading) Fx.CmssOn = _cmssOn.Checked; };
-            _widen.ValueChanged += delegate { if (!Loading) Fx.CmssWidening = _widen.Value; };
-
-            Reload();
-        }
-
-        private void Apply()
-        {
-            EngineBoot.SetState(Fx.EaxOn, Fx.EaxPreset, Fx.EaxAmount);
-        }
-
-        protected override void DoDefault()
-        {
-            Fx.EaxOn = false;
-            Fx.EaxAmount = 0;
-            Fx.EaxPreset = Presets[0];
-            Fx.CmssOn = false;
-            Fx.CmssWidening = 50;
-        }
-
-        public override void Reload()
-        {
-            bool was = Loading;
-            Loading = true;
-            try
-            {
-                _on.Checked = Fx.EaxOn;
-                int idx = Array.IndexOf(Presets, Fx.EaxPreset);
-                if (idx < 0) idx = 0;
-                _list.SelectedIndex = idx;
-                _presetVal.Text = Presets[idx];
-                _amt.Value = Fx.EaxAmount;
-                _amtVal.Text = "Effects Amount : " + Fx.EaxAmount;
-
-                _cmssOn.Checked = Fx.CmssOn;
-                _widen.Value = Fx.CmssWidening;
-            }
-            finally { Loading = was; }
-            Apply();
-        }
-    }
+		// Token: 0x04000041 RID: 65
+		private CSlider _amt;
+	}
 }
