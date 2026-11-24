@@ -4,40 +4,19 @@ using System.Windows.Forms;
 
 namespace EaxReverbEngine
 {
-    // بوابة الاشتراك: تظهر نافذة التفعيل اذا ما فيه مفتاح صالح
+    // نظام الترخيص والاتصال انشال بالكامل بطلب صريح - البرنامج صار مجاني ومفتوح
+    // بدون أي فحص أو اتصال شبكة. خليت نافذة LicenseWindow موجودة بالملف (كود ميت، ما أحد
+    // يناديها بعد الحين) بس عشان ما نكسر أي مرجع لها بملفات ثانية.
     internal static class LicenseGate
     {
-        private static System.Threading.Timer _timer;
-
         public static bool Ensure()
         {
-            LicState s = License.Check();
-            Log.Write("license: " + License.Describe(s) + " hwid=" + License.Hwid());
-            if (s == LicState.Ok) return true;
-            using (LicenseWindow w = new LicenseWindow(s))
-            {
-                w.ShowDialog();
-                return w.Activated;
-            }
+            return true;
         }
 
-        // يفحص كل دقيقة؛ اذا انتهى الاشتراك يوقف المحرك
         public static void Watch(Action onExpired)
         {
-            _timer = new System.Threading.Timer(delegate(object o)
-            {
-                try
-                {
-                    LicState s = License.Check();
-                    if (s != LicState.Ok)
-                    {
-                        Log.Write("license: " + License.Describe(s) + " - stopping engine");
-                        _timer.Dispose();
-                        onExpired();
-                    }
-                }
-                catch (Exception) { }
-            }, null, 60000, 60000);
+            // ولا شي - ما فيه فحص دوري ولا اتصال بعد الآن.
         }
     }
 
@@ -53,7 +32,6 @@ namespace EaxReverbEngine
         public LicenseWindow(LicState initial)
         {
             Text = "Activation";
-            // نافذة قابلة للتمديد حتى يقدر العميل يكبّرها ويشوف/يسحب الكي بسهولة
             FormBorderStyle = FormBorderStyle.Sizable;
             MaximizeBox = true; MinimizeBox = true;
             MinimumSize = new Size(440, 300);
@@ -88,7 +66,6 @@ namespace EaxReverbEngine
             _hw.Font = new Font("Consolas", 12f, FontStyle.Bold);
             _hw.SetBounds(16, 88, 384, 28);
             _hw.Anchor = AnchorStyles.Top | AnchorStyles.Left | AnchorStyles.Right;
-            // اضغطة بسيطة تسهّل التحديد: تحديد كامل تلقائي عند الدخول، وتحديد بالنقر
             _hw.Enter += delegate { _hw.SelectAll(); };
             _hw.Click += delegate { _hw.SelectAll(); };
             Controls.Add(_hw);
