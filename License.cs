@@ -2,6 +2,18 @@
 
 namespace EaxReverbEngine
 {
+	internal enum LicState
+	{
+		Ok,
+		NoKey,
+		BadKey,
+		WrongHwid,
+		Expired,
+		Revoked,
+		Offline,
+		ClockTampered
+	}
+
 	// نظام الترخيص والاتصال بالسيرفر (n7-r67.onrender.com) انشال بالكامل بطلب صريح:
 	// ما فيه قراءة HWID، ما فيه ملفات cache/stamp، وما فيه أي اتصال شبكة من هذا الكلاس نهائيًا.
 	// خليناه بس يرجع "مفعّل دايمًا" عشان أي كود ثاني يستدعي License.* ما ينكسر.
