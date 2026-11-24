@@ -36,7 +36,7 @@ namespace EaxReverbEngine
 			base.Cap(panel, "0", 330, 36, 18, ContentAlignment.MiddleLeft);
 			this._amt = base.HBar(panel, 350, 30, 108, 0, 100);
 			base.Cap(panel, "100", 460, 36, 26, ContentAlignment.MiddleLeft);
-			this._on.CheckedChanged += delegate(object <p0>, EventArgs <p1>)
+			this._on.CheckedChanged += delegate(object sender, EventArgs e)
 			{
 				if (!this.Loading)
 				{
@@ -44,7 +44,7 @@ namespace EaxReverbEngine
 					this.Apply();
 				}
 			};
-			this._list.SelectedIndexChanged += delegate(object <p0>, EventArgs <p1>)
+			this._list.SelectedIndexChanged += delegate(object sender, EventArgs e)
 			{
 				if (this._list.SelectedIndex >= 0)
 				{
@@ -57,7 +57,7 @@ namespace EaxReverbEngine
 					}
 				}
 			};
-			this._amt.ValueChanged += delegate(object <p0>, EventArgs <p1>)
+			this._amt.ValueChanged += delegate(object sender, EventArgs e)
 			{
 				this._amtVal.Text = "Effects Amount : " + this._amt.Value.ToString();
 				if (!this.Loading)
